@@ -1,0 +1,10 @@
+.color {
+    height: 50px;
+    width: 50px
+}
+
+.colorRow {
+    display: flex;
+    padding: 0;
+    margin: 0
+}

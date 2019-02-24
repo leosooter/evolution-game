@@ -1,26 +1,26 @@
 import React, { Component } from 'react';
-import logo from './logo.svg';
+import {connect} from "react-redux";
 import './App.css';
+import {Provider} from "react-redux";
+import store from "../src/store";
+import EnvironmentConnected from "./components/environment/environment-connected";
+import MapConnected from "./components/map/map-connected";
+import SideBarConnected from "./components/side-bar/side-bar-connected";
 
 class App extends Component {
   render() {
+    const views = {
+      "environment": (<EnvironmentConnected />),
+      "map": (<MapConnected viewType={this.props.viewType}/>)
+    };
+
+    const mainView = views[this.props.view] || null;
+
     return (
-      <div className="App">
-        <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <p>
-            Edit <code>src/App.js</code> and save to reload.
-          </p>
-          <a
-            className="App-link"
-            href="https://reactjs.org"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Learn React
-          </a>
-        </header>
-      </div>
+      <Provider store={store}>
+        {mainView}
+        <SideBarConnected />
+      </Provider>
     );
   }
 }

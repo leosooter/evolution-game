@@ -1,0 +1,29 @@
+.displayWrapper {
+    margin-bottom: 20px;
+}
+
+.displaySquare {
+    height: 200px;
+    width: 200px;
+    border: 1px solid black;
+    margin-top: 30px;
+}
+
+.displayInfo {
+    border: 1px solid darkgreen;
+    width: 400px;
+}
+
+.displayInfo h5 {
+    text-align: center;
+}
+
+.displayStat {
+    display: inline-block;
+    color: darkgreen;
+    margin-right: 10px;
+}
+
+.displayStat em {
+    color: black;
+}
