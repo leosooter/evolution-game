@@ -24,7 +24,7 @@ function reducer(state=[], action) {
     switch (action.type) {
         case APPLY_INITIAL_RAIN:
 
-            applyYearsRain(80, state.grid.gridArray, false);
+            applyYearsRain(5, state.grid.gridArray, false);
             state.numSeasons ++;
             return {
                 ...state
@@ -33,7 +33,7 @@ function reducer(state=[], action) {
         break;
 
         case APPLY_YEARLY_RAIN:
-            applyYearsRain(1, state.grid.gridArray);
+            applyYearsRain(5, state.grid.gridArray);
             state.numSeasons++;
             return {
                 ...state
@@ -42,6 +42,8 @@ function reducer(state=[], action) {
 
         case SELECT_SQUARE:
             const square = state.grid.linearArray[action.payload] || {}
+            console.log('Selected Square', square);
+
             return {
                 ...state,
                 selectedSquare: square

@@ -4,10 +4,15 @@ import {worldColorsGrid} from "../config/colors-config";
 import {random} from "./utilities";
 
 const directionArray = ["e", "s", "w", "n"];
+const squareSideArray = ["e", "s", "w", "n", "ne", "nw", "se", "sw"];
 // const seasons = [];
 const world = {};
+let globalGrid = {
+    linearArray: [],
+    gridArray: []
+};
 // let gridArray = [];
-let linearArray = [];
+// let linearArray = [];
 
 function getElevation(currentElevation, power) {
     let plusMinus = [-1, 1];
@@ -76,9 +81,9 @@ function newSquare(index, latitude) {
     return square;
 }
 
-function assignColors(linearArray) {
-    for (let index = 0; index < linearArray.length; index++) {
-        const square = linearArray[index];
+function assignColors() {
+    for (let index = 0; index < globalGrid.linearArray.length; index++) {
+        const square = globalGrid.linearArray[index];
 
         if(!square.avgElevation) {
             if(square.e) {
@@ -95,7 +100,7 @@ function assignColors(linearArray) {
             }
 
         }
-        let latitudeAdjust = (square.latitude * world.zoomLevel) / 3;
+        let latitudeAdjust = (square.latitude * world.zoomLevel) / 3.7;
         let elevationAdjust = square.avgElevation * 1.2;
         let globalTemp = 140;
 
@@ -128,8 +133,45 @@ function assignColors(linearArray) {
     }
 }
 
+function findLowestSide(square) {
+    square.index = "test";
+    let lowSideHeight = square.avgElevation;
+    let lowSide = null;
+
+    for (let i = 0; i < squareSideArray.length; i++) {
+        const side = square[squareSideArray[i]];
+
+        if(side) {
+            console.log('square elevation', square.avgElevation);
+            console.log('side elevation', side.avgElevation);
+        }
+
+
+        if(side && side.avgElevation < lowSideHeight) {
+            console.log('setting lowSide to', side.avgElevation);
+
+            lowSideHeight = side.avgElevation;
+            lowSide = side;
+        }
+    }
+
+    square.lowSide = lowSide;
+
+    return square;
+}
+
+function assignSlope() {
+    for (let index = 0; index < globalGrid.linearArray.length; index++) {
+        // console.log('globalGrid.linearArray', globalGrid.linearArray);
+
+        let square = globalGrid.linearArray[0];
+        // console.log('square', square);
+
+        square = findLowestSide(square);
+    }
+}
+
 export const getInitialGrid = (xSquares, ySquares) => {
-    let gridArray = [];
     setSeasons();
     let index = 0;
 
@@ -144,40 +186,42 @@ export const getInitialGrid = (xSquares, ySquares) => {
                 square.w.e = square;
 
                 if (x > 0) {
-                    square.nw = gridArray[x - 1][y - 1];
+                    square.nw = globalGrid.gridArray[x - 1][y - 1];
                     square.nw.se = square;
                 }
             }
             if (x > 0) {
-                square.n = gridArray[x - 1][y];
+                square.n = globalGrid.gridArray[x - 1][y];
                 square.n.s = square;
 
                 if (y < ySquares - 1) {
-                    square.ne = gridArray[x - 1][y + 1];
+                    square.ne = globalGrid.gridArray[x - 1][y + 1];
                     square.ne.sw = square;
                 }
             }
 
             row.push(square);
-            linearArray.push(square);
+            globalGrid.linearArray.push(square);
             index++;
         }
-        gridArray.push(row);
+        globalGrid.gridArray.push(row);
     }
 
-    let start = linearArray[0];
+    let start = globalGrid.linearArray[0];
     start.avgElevation = random(0,100);
 
     // spreadElevationFromPoint(start, world.elevationChange);
     spreadElevationFromPoint(start, world.zoomLevel);
-    // applyYearsRain(1, gridArray);
-    assignColors(linearArray);
+    assignSlope();
+    // applyYearsRain(1);
+    assignColors();
+
+    console.log('globalGrid.linearArray', globalGrid.linearArray);
 
     return {
+        globalGrid,
         width: xSquares,
-        height: ySquares,
-        gridArray,
-        linearArray
+        height: ySquares
     }
 };
 
@@ -191,9 +235,11 @@ function applyRain(square, rainLeft, takeWater) {
     if (rainLeft > 0 && square.avgElevation > 0 && rainChance > 85) {
         square.precipitation += rainAmount;
         rainLeft -= rainAmount;
+        let evaporation = 2;
 
-        if (takeWater && square.precipitation >= 2) {
-            square.precipitation -= 2;
+        if (takeWater && square.precipitation) {
+            square.precipitation -= evaporation;
+            square.precipitation = clamp(square.precipitation, 0, 150);
         }
     } else if (square.avgElevation <= 0) {
         rainLeft += random(.05, .1);
@@ -205,9 +251,9 @@ function applyRain(square, rainLeft, takeWater) {
     return rainLeft;
 }
 
-function sendRainE(amount, gridArray, takeWater) {
-    for (let i = 0; i < gridArray.length; i++) {
-        let row = gridArray[i];
+function sendRainE(amount, takeWater) {
+    for (let i = 0; i < globalGrid.gridArray.length; i++) {
+        let row = globalGrid.gridArray[i];
         let rainLeft = amount;
         for (let j = 0; j < row.length; j++) {
             const square = row[j];
@@ -219,8 +265,8 @@ function sendRainE(amount, gridArray, takeWater) {
 }
 
 function sendRainW(amount, takeWater) {
-    for (let i = 0; i < gridArray.length; i++) {
-        let row = gridArray[i];
+    for (let i = 0; i < globalGrid.gridArray.length; i++) {
+        let row = globalGrid.gridArray[i];
         let rainLeft = amount;
         for (let j = 0; j < row.length; j++) {
             const square = row[j];
@@ -230,8 +276,8 @@ function sendRainW(amount, takeWater) {
 }
 
 function sendRainN(amount, takeWater) {
-    for (let i = 0; i < gridArray.length; i++) {
-        let row = gridArray[i];
+    for (let i = 0; i < globalGrid.gridArray.length; i++) {
+        let row = globalGrid.gridArray[i];
         let rainLeft = amount;
         for (let j = 0; j < row.length; j++) {
             const square = row[j];
@@ -241,8 +287,8 @@ function sendRainN(amount, takeWater) {
 }
 
 function sendRainS(amount, takeWater) {
-    for (let i = 0; i < gridArray.length; i++) {
-        let row = gridArray[i];
+    for (let i = 0; i < globalGrid.gridArray.length; i++) {
+        let row = globalGrid.gridArray[i];
         let rainLeft = amount;
         for (let j = 0; j < row.length; j++) {
             const square = row[j];
@@ -251,31 +297,29 @@ function sendRainS(amount, takeWater) {
     }
 }
 
-export function applyYearsRain(times = 1, gridArray, takeWater = true) {
+export function applyYearsRain(times = 1, takeWater = true) {
     for (let i = 0; i < times; i++) {
         for (let seasonIndex = 0; seasonIndex < 4; seasonIndex++) {
             let season = world.seasons[seasonIndex];
-            applySeasonsRain(season, gridArray, takeWater);
+            applySeasonsRain(season, takeWater);
         }
     }
 
-    assignColors(linearArray);
-
-    return gridArray;
+    assignColors();
 }
 
-export function applySeasonsRain(season, gridArray, takeWater) {
+export function applySeasonsRain(season, takeWater) {
 
         const windDirection = season.windDirection;
 
         if (windDirection === "e") {
-            sendRainE(season.rainAmount, gridArray, takeWater);
+            sendRainE(season.rainAmount, takeWater);
         } else if (windDirection === "w") {
-            sendRainE(season.rainAmount, gridArray, takeWater);
+            sendRainE(season.rainAmount, takeWater);
         } else if (windDirection === "n") {
-            sendRainE(season.rainAmount, gridArray, takeWater);
+            sendRainE(season.rainAmount, takeWater);
         } else if (windDirection === "s") {
-            sendRainE(season.rainAmount, gridArray, takeWater);
+            sendRainE(season.rainAmount, takeWater);
         }
 }
 
@@ -296,7 +340,7 @@ export function initNewWorld() {
     world.globalMoisture = random(5, 20);
     world.globalTemp = random(-20,20) / 10; //-2.0 - 2.0
     world.seasons = setSeasons(world.globalMoisture, world.globalTemp);
-    world.zoomLevel = 2;
+    world.zoomLevel = 10;
 
     return {
         environmentGrid: [],
@@ -316,6 +360,6 @@ export function initNewWorld() {
         },
         numSeasons: 0,
         worldColorsGrid,
-        grid: getInitialGrid(120, 120)
+        grid: getInitialGrid(2, 2)
     }
 }
