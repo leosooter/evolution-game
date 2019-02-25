@@ -77,6 +77,13 @@ export function getGridColor(square) {
         return getWaterColor(baseTemp);
     }
 
+    if(square.precipitation > 100) {
+        return {r: 255, g: 0, b: 0}
+    }
+    // else if (square.precipitation === 100) {
+    //     return {r: 255, g: 100, b: 100}
+    // }
+
     const maxIndex = worldColorsGrid.length - 1;
     const gridAdjust = 100 / worldColorsGrid.length;
     colorTracker.gridAdjust = gridAdjust;

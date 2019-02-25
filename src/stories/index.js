@@ -23,8 +23,29 @@ storiesOf('Grid', module)
 ))
 
 
-storiesOf('Environment', module)
-.add('Environment', () => (
-    <App view="environment"/>
-  ));
-
+storiesOf('MockGrid', module)
+  .add('Elevation', () => ( <
+    App view = "map"
+    viewType = "elevation"
+    mock = {true} / >
+  ))
+  .add('Rainfall', () => ( <
+    App view = "map"
+    viewType = "rainfall"
+    mock = {true} / >
+  ))
+  .add('Temperature', () => ( <
+    App view = "map"
+    viewType = "temperature"
+    mock = {true} / >
+  ))
+  .add('Ground Color', () => ( <
+    App view = "map"
+    viewType = "groundColor"
+    mock = {true} / >
+  ))
+  .add('Grid Color', () => ( <
+    App view = "map"
+    viewType = "gridColor"
+    mock = {true} / >
+  ))

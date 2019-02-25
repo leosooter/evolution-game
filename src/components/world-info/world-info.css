@@ -1,0 +1,29 @@
+.worldInfoWrapper {
+    margin-bottom: 20px;
+}
+
+.worldInfoSquare {
+    height: 200px;
+    width: 200px;
+    border: 1px solid black;
+    margin-top: 30px;
+}
+
+.worldInfoData {
+    border: 1px solid darkgreen;
+    width: 400px;
+}
+
+.worldInfoData h5 {
+    text-align: center;
+}
+
+.worldInfoStat {
+    worldInfo: inline-block;
+    color: darkgreen;
+    margin-right: 10px;
+}
+
+.worldInfoStat em {
+    color: black;
+}

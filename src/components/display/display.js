@@ -18,13 +18,13 @@ class Display extends Component{
                     <div className="displayStat">T: <em>{square.baseTemp}</em></div>
                 </div>
 
-                <div className="displayInfo">
+                {/* <div className="displayInfo">
                     <div className="displayStat">
-                        R: <em>{square.groundColor.r} |</em>
-                        G: <em>{square.groundColor.g} |</em>
-                        B: <em>{square.groundColor.b} |</em>
+                        R: <em>{square.griddColor.r} |</em>
+                        G: <em>{square.griddColor.g} |</em>
+                        B: <em>{square.griddColor.b} |</em>
                     </div>
-                </div>
+                </div> */}
 
                 <div className="displaySquare" style={{background: square.gridColorStyle}}>
                     {/* {this.renderTrees()} */}

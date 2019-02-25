@@ -16,7 +16,8 @@ function generateRandomEnvironment() {
     return environment;
 }
 
-const defaultState = initNewWorld();
+// Max num squares per side 164
+const defaultState = initNewWorld(100,100);
 
 function reducer(state=[], action) {
     console.log('Reducer action', action);
@@ -24,7 +25,7 @@ function reducer(state=[], action) {
     switch (action.type) {
         case APPLY_INITIAL_RAIN:
 
-            applyYearsRain(5, state.grid.gridArray, false);
+            applyYearsRain(10, false);
             state.numSeasons ++;
             return {
                 ...state
@@ -33,7 +34,7 @@ function reducer(state=[], action) {
         break;
 
         case APPLY_YEARLY_RAIN:
-            applyYearsRain(5, state.grid.gridArray);
+            applyYearsRain(1, false);
             state.numSeasons++;
             return {
                 ...state
