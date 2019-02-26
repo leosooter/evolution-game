@@ -6,72 +6,108 @@ import gridMocks from "../../mocks/grid-mocks";
 
 const directionArray = ["e", "s", "w", "n"];
 const squareSideArray = ["e", "s", "w", "n", "ne", "nw", "se", "sw"];
-// const seasons = [];
 const world = {};
-let globalGrid = {
-    linearArray: [],
-    gridArray: []
-};
-// let gridArray = [];
-// let linearArray = [];
+let globalGrid = [];
+let rainLeft;
 
-function getElevation(currentElevation, power) {
-    let plusMinus = [-1, 1];
-    let multiplier = sample(plusMinus);
 
-    multiplier = currentElevation > 90 ? -1 : multiplier;
-    multiplier = currentElevation < -20 ? 1 : multiplier;
-    const diff = random(power) * multiplier;
+////////////////////////////////////////////////// Grid Utilities
+function getRandomFromGrid() {
+    let heightIndex = random(0, globalGrid.length - 1);
+    let widthIndex = random(0, globalGrid[0].length - 1);
 
-    let finalElevation = currentElevation + diff;
-
-    if(finalElevation > 100) {
-        finalElevation = 100;
-    }
-
-    return finalElevation;
+    return globalGrid[heightIndex][widthIndex]
 }
 
-function spreadElevationFromPoint(current, power) {
-    const direction = shuffle(directionArray);
-
-    if (current[direction[0]] && !current[direction[0]].avgElevation) {
-        current[direction[0]].avgElevation = getElevation(current.avgElevation, power);
-        current = current[direction[0]];
-        spreadElevationFromPoint(current, power);
+function loopGrid(callBack, outerCallBack) {
+    if (!typeof callback === "function") {
+        console.warn("callback must be a function --- in loopGrid()");
     }
 
-    if (current[direction[1]] && !current[direction[1]].avgElevation) {
-        current[direction[1]].avgElevation = getElevation(current.avgElevation, power);
-        current = current[direction[1]];
-        spreadElevationFromPoint(current, power);
-    }
+    let gridHeight = globalGrid.length;
+    let gridWidth = globalGrid[0].length;
 
-    if (current[direction[2]] && !current[direction[2]].avgElevation) {
-        current[direction[2]].avgElevation = getElevation(current.avgElevation, power);
-        current = current[direction[2]];
-        spreadElevationFromPoint(current, power);
-    }
-
-    if (current[direction[3]] && !current[direction[3]].avgElevation) {
-        current[direction[3]].avgElevation = getElevation(current.avgElevation, power);
-        current = current[direction[3]];
-        spreadElevationFromPoint(current, power);
+    for (let heightIndex = 0; heightIndex < gridHeight; heightIndex++) {
+        outerCallBack && outerCallBack(globalGrid[heightIndex]);
+        for (let widthIndex = 0; widthIndex < gridWidth; widthIndex++) {
+            const square = globalGrid[heightIndex][widthIndex];
+            callBack(square);
+        }
     }
 }
 
-export function newSquare(index, latitude, options={}) { // options param is used to generate set-value squares for mocks
+function scanWest(callBack, outerCallBack) {
+    let gridHeight = globalGrid.length;
+    let gridWidth = globalGrid[0].length;
+
+    for (let heightIndex = 0; heightIndex < gridHeight; heightIndex++) {
+        outerCallBack && outerCallBack(globalGrid[heightIndex]);
+        for (let widthIndex = gridWidth - 1; widthIndex >= 0; widthIndex--) {
+            const square = globalGrid[heightIndex][widthIndex];
+
+            callBack(square);
+        }
+    }
+}
+
+function scanSouth(callBack, outerCallBack) {
+    let gridHeight = globalGrid.length;
+    let gridWidth = globalGrid[0].length;
+
+    for (let widthIndex = 0; widthIndex < gridWidth; widthIndex++) {
+        outerCallBack && outerCallBack(globalGrid[widthIndex]);
+        for (let heightIndex = 0; heightIndex < gridHeight; heightIndex++) {
+            const square = globalGrid[heightIndex][widthIndex];
+
+            callBack(square);
+        }
+    }
+}
+
+function scanNorth(callBack, outerCallBack) {
+    let gridHeight = globalGrid.length;
+    let gridWidth = globalGrid[0].length;
+
+    for (let widthIndex = 0; widthIndex < gridWidth; widthIndex++) {
+        outerCallBack && outerCallBack(globalGrid[widthIndex]);
+        for (let heightIndex = gridHeight - 1; heightIndex >= 0; heightIndex--) {
+            const square = globalGrid[heightIndex][widthIndex];
+
+            callBack(square);
+        }
+    }
+}
+
+function scanGridByDirection(direction="e", callBack, outerCallBack) {
+    if (!typeof callback === "function") {
+        console.warn("callback must be a function --- in scanGridByDirection()");
+    }
+
+    let scanFunctions = {
+        "e": loopGrid,
+        "w": scanWest,
+        "s": scanSouth,
+        "n": scanNorth
+    }
+
+    scanFunctions[direction](callBack, outerCallBack)
+}
+
+
+///////////////////////////// Grid creation
+
+export function newSquare(index, widthIndex, heightIndex, options={}) { // options param is used to generate set-value squares for mocks
     const {setElevation, setTemp, setPrecip} = options;
 
     let square = {
         avgElevation: setElevation || null,
         waterElevation: 0,
-        // avgElevation: random(1,100),
         precipitation: setPrecip || 0,
         baseTemp: setTemp || 0,
-        avgElevationChange: random(1, 100),
         index,
-        latitude,
+        latitude : null,
+        widthIndex,
+        heightIndex,
         n: null,
         s: null,
         e: null,
@@ -85,58 +121,141 @@ export function newSquare(index, latitude, options={}) { // options param is use
     return square;
 }
 
-function assignColors() {
-    for (let index = 0; index < globalGrid.linearArray.length; index++) {
-        const square = globalGrid.linearArray[index];
+function setRandomGlobalGrid(height, width) {
+    let index = 0;
 
-        if(!square.avgElevation) {
-            if(square.e) {
-                square.avgElevation = square.e.avgElevation;
-            }
-            else if(square.s) {
-                square.avgElevation = square.s.avgElevation;
-            }
-            else if(square.w) {
-                square.avgElevation = square.w.avgElevation;
-            }
-            else if(square.n) {
-                square.avgElevation = square.n.avgElevation;
-            }
+    for (let gridHeight = 0; gridHeight < height; gridHeight++) {
+        const row = [];
 
+        for (let gridWidth = 0; gridWidth < width; gridWidth++) {
+            row.push(newSquare(index, gridWidth, gridHeight));
         }
 
-        let latitudeAdjust = (square.latitude * world.zoomLevel) / 3.7;
-        let elevationAdjust = square.avgElevation * 1.2;
-        let globalTemp = 140;
-
-        square.baseTemp = Math.floor(globalTemp - (latitudeAdjust + elevationAdjust));
-        square.baseTemp = square.baseTemp > 100 ? 100 : square.baseTemp;
-
-        square.groundColor = applyYearlyRain(square);
-        square.groundColorStyle = `rgb(${square.groundColor.r}, ${square.groundColor.g}, ${square.groundColor.b})`;
-
-        square.gridColor = getGridColor(square);
-        square.gridColorStyle = `rgb(${square.gridColor.r}, ${square.gridColor.g}, ${square.gridColor.b})`;
-
-
-
-        let r = 100 - square.avgElevation;
-        let g = r;
-        let b = r;
-        square.elevationStyle = `rgb(${r}, ${g}, ${b})`;
-
-        b = 255 - square.precipitation;
-        r = b - 30;
-        g = b - 30;
-        square.rainfallStyle = `rgb(${r}, ${g}, ${b})`;
-
-        r = square.baseTemp + 100;
-        g = 0;
-        b = 255 - square.baseTemp;
-        square.temperatureStyle = `rgb(${r}, ${g}, ${b})`;
-
+        globalGrid.push(row);
     }
 }
+
+
+/////////////////////////////////////////////////// Elevation and Temp
+
+function getElevation(currentElevation, power) {
+    let plusMinus = [-1, 1];
+    let multiplier = sample(plusMinus);
+
+    multiplier = currentElevation > 90 ? -1 : multiplier;
+    multiplier = currentElevation < -20 ? 1 : multiplier;
+    const diff = random(power) * multiplier;
+
+    let finalElevation = currentElevation + diff;
+
+    if (finalElevation > 100) {
+        finalElevation = 100;
+    }
+
+    return finalElevation;
+}
+
+function assignElevationFromSquare(current, power) {
+    const shuffledDirectionArray = shuffle(directionArray);
+
+    for (let index = 0; index < shuffledDirectionArray.length; index++) {
+        if (current[shuffledDirectionArray[0]] && !current[shuffledDirectionArray[0]].avgElevation) {
+            current[shuffledDirectionArray[0]].avgElevation = getElevation(current.avgElevation, power);
+            current = current[shuffledDirectionArray[0]];
+            assignElevationFromSquare(current, power);
+        }
+    }
+}
+
+function fillMissedElevation(square) {
+    shuffle(squareSideArray).forEach(side => {
+        if(square[side]) {
+            square.avgElevation = square[side].avgElevation;
+            return;
+        }
+    });
+}
+
+function assignTemp(square) {
+    let latitudeAdjust = (square.latitude * world.zoomLevel) / 3.7;
+    let elevationAdjust = square.avgElevation * 1.2;
+    let globalTemp = 140;
+    square.baseTemp = Math.floor(globalTemp - (latitudeAdjust + elevationAdjust));
+    square.baseTemp = square.baseTemp > 100 ? 100 : square.baseTemp;
+}
+
+function assignTempAndFillMissedElevationToSquare(square) {
+    if(!square.avgElevation) {
+        fillMissedElevation(square);
+    }
+
+    assignTemp(square);
+}
+
+//fill in any missed elevation and assign temp
+function assignTempToGrid() {
+    loopGrid(assignTempAndFillMissedElevation)
+}
+
+
+//////////////////////////////////// Colors
+function assignGridColorToSquare(square) {
+    square.gridColor = getGridColor(square);
+    square.gridColorStyle = `rgb(${square.gridColor.r}, ${square.gridColor.g}, ${square.gridColor.b})`;
+
+    let r = 100 - square.avgElevation;
+    let g = r;
+    let b = r;
+    square.elevationStyle = `rgb(${r}, ${g}, ${b})`;
+
+    b = 255 - square.precipitation;
+    r = b - 30;
+    g = b - 30;
+    square.rainfallStyle = `rgb(${r}, ${g}, ${b})`;
+
+    r = square.baseTemp + 100;
+    g = 0;
+    b = 255 - square.baseTemp;
+    square.temperatureStyle = `rgb(${r}, ${g}, ${b})`;
+}
+
+function assignGridColorsToGrid() {
+    loopGrid(assignGridColorToSquare)
+}
+
+
+/////////////////////////////////// Sides
+
+export function assignSidesToSquare(square) {
+    const {widthIndex, heightIndex} = square
+    const row = globalGrid[heightIndex];
+
+    if (widthIndex > 0) {
+        square.w = row[widthIndex - 1];
+        square.w.e = square;
+
+        if (heightIndex > 0) {
+            square.nw = globalGrid[heightIndex - 1][widthIndex - 1];
+            square.nw.se = square;
+        }
+    }
+
+    if (heightIndex > 0) {
+        square.n = globalGrid[heightIndex - 1][widthIndex];
+        square.n.s = square;
+
+        if (widthIndex < heightIndex - 1) {
+            square.ne = globalGrid[heightIndex - 1][widthIndex + 1];
+            square.ne.sw = square;
+        }
+    }
+}
+
+export function assignSidesToGrid() {
+    loopGrid(assignSidesToSquare);
+}
+
+////////////////////////////////// Slope
 
 function findLowestSide(square) {
     let lowSideHeight = square.avgElevation + square.waterElevation;
@@ -147,8 +266,6 @@ function findLowestSide(square) {
         const side = square[squareSideArray[i]];
 
         if (side && side.avgElevation + side.waterElevation < lowSideHeight) {
-            // console.log('setting lowSide to', side.avgElevation);
-
             lowSideHeight = side.avgElevation + side.waterElevation;
             lowSide = side;
         } else if (side && side.avgElevation + side.waterElevation === square.avgElevation + square.waterElevation) {
@@ -161,110 +278,10 @@ function findLowestSide(square) {
     return square;
 }
 
-function assignSlope() {
-    for (let index = 0; index < globalGrid.linearArray.length; index++) {
-        // console.log('globalGrid.linearArray', globalGrid.linearArray);
 
-        let square = globalGrid.linearArray[index];
-        // console.log('square', square);
+//////////////////////////////////// Precipitation
 
-        square = findLowestSide(square);
-    }
-}
-
-export const getInitialGrid = (xSquares, ySquares) => {
-    setSeasons();
-    let index = 0;
-
-    for (let x = 0; x < xSquares; x++) {
-        let row = [];
-        for (let y = 0; y < ySquares; y++) {
-            const latitude = xSquares - x;
-            const square = newSquare(index, latitude);
-
-            if (y > 0) {
-                square.w = row[y - 1];
-                square.w.e = square;
-
-                if (x > 0) {
-                    square.nw = globalGrid.gridArray[x - 1][y - 1];
-                    square.nw.se = square;
-                }
-            }
-            if (x > 0) {
-                square.n = globalGrid.gridArray[x - 1][y];
-                square.n.s = square;
-
-                if (y < ySquares - 1) {
-                    square.ne = globalGrid.gridArray[x - 1][y + 1];
-                    square.ne.sw = square;
-                }
-            }
-
-            row.push(square);
-            globalGrid.linearArray.push(square);
-            index++;
-        }
-        globalGrid.gridArray.push(row);
-    }
-
-    let start = globalGrid.linearArray[0];
-    start.avgElevation = random(0,100);
-
-    // spreadElevationFromPoint(start, world.elevationChange);
-    spreadElevationFromPoint(start, world.zoomLevel);
-    assignSlope();
-    // applyYearsRain(1);
-    assignColors();
-
-    console.log('globalGrid.linearArray', globalGrid.linearArray);
-};
-
-function flowWater(square) {
-    // If square has lowSide - flow all excess to lowSide
-    //If square has levelSide with lower water level, equalize the water level
-    let excessWater = square.precipitation - 100;
-    square.waterElevation = excessWater;
-    findLowestSide(square);
-    if(square.lowSide) {
-        console.log("flowing to low side VVVVVVVVV");
-
-        let lower = square.lowSide;
-        square.precipitation = 100;
-        lower.precipitation += excessWater;
-
-        if (lower.precipitation > 100 && square.avgElevation > 0 && lower.lowSide) {
-            flowWater(lower);
-        }
-    } else if (square.levelSides && square.levelSides.length) {
-        square.levelSides.forEach(side => {
-            if(side.precipitation < square.precipitation) {
-                console.log("flowing to level side -----");
-                let diff = Math.floor((square.precipitation - side.precipitation) / 2);
-                diff = diff > excessWater ? excessWater : diff
-
-                square.precipitation -= diff;
-                side.precipitation = square.precipitation;
-                side.avgElevation -= 1;
-
-                if (side.precipitation > 100 && square.avgElevation > 0) {
-                    flowWater(side);
-                }
-            }
-        });
-    }
-}
-
-function spreadWater() {
-    globalGrid.linearArray.forEach(square => {
-        if (square.precipitation > 100 && square.avgElevation > 0) {
-            flowWater(square);
-        }
-    });
-}
-
-function applyRain(square, rainLeft, takeWater) {
-    // const elevationBonus = Math.floor(square.avgElevation / 20);
+function applyRain(square) {
     const elevationBonus = Math.floor(square.avgElevation / 4);
     const maxChance = 95 + elevationBonus;
     const rainChance = random(1, maxChance);
@@ -273,169 +290,111 @@ function applyRain(square, rainLeft, takeWater) {
     if (rainLeft > 0 && square.avgElevation > 0 && rainChance > 85) {
         square.precipitation += rainAmount;
         rainLeft -= rainAmount;
-        let evaporation = 2;
-
-        if (takeWater && square.precipitation) {
-            square.precipitation -= evaporation;
-            square.precipitation = clamp(square.precipitation, 0, 150);
-        }
 
     } else if (square.avgElevation <= 0) {
         rainLeft += random(.05, .1);
     }
-    // else if (rainLeft <= 0 && random(1, 5) === 5) {
-    //     square.precipitation += random(1, 3);
-    // }
-
-    return rainLeft;
 }
 
-function sendRainE(amount, takeWater) {
-    for (let i = 0; i < globalGrid.gridArray.length; i++) {
-        let row = globalGrid.gridArray[i];
-        let rainLeft = amount;
-        for (let j = 0; j < row.length; j++) {
-            const square = row[j];
-            rainLeft = applyRain(square, rainLeft, takeWater);
-        }
-        // console.log('rainLeft', rainLeft);
-        // console.log('Rain applied', amount - rainLeft);
+function applyEvaporation(square) {
+    if (square.avgElevation > 0 && square.precipitation) {
+        square.precipitation -= 2;
+        square.precipitation = clamp(square.precipitation, 0, 150);
     }
 }
 
-function sendRainW(amount, takeWater) {
-    for (let i = 0; i < globalGrid.gridArray.length; i++) {
-        let row = globalGrid.gridArray[i];
-        let rainLeft = amount;
-        for (let j = 0; j < row.length; j++) {
-            const square = row[j];
-            rainLeft = applyRain(square, rainLeft);
-        }
-    }
+export function applyRainAndEvaporation(square) {
+    applyRain(square);
+    applyEvaporation(square);
 }
 
-function sendRainN(amount, takeWater) {
-    for (let i = 0; i < globalGrid.gridArray.length; i++) {
-        let row = globalGrid.gridArray[i];
-        let rainLeft = amount;
-        for (let j = 0; j < row.length; j++) {
-            const square = row[j];
-            rainLeft = applyRain(square, rainLeft);
-        }
+
+
+export function applySeasonsRain(evaporate) {
+    let rainType = applyRainAndEvaporation;
+    if(!evaporate) {
+        rainType = applyRain;
     }
+
+    scanGridByDirection(world.currentSeason.windDirection, rainType, () => {rainLeft = world.currentSeason.rainAmount});
+    advanceSeason();
 }
 
-function sendRainS(amount, takeWater) {
-    for (let i = 0; i < globalGrid.gridArray.length; i++) {
-        let row = globalGrid.gridArray[i];
-        let rainLeft = amount;
-        for (let j = 0; j < row.length; j++) {
-            const square = row[j];
-            rainLeft = applyRain(square, rainLeft);
-        }
-    }
-}
-
-export function applyYearsRain(times = 1, takeWater = true) {
+export function applyYearsRain(times = 1, evaporate) {
     for (let i = 0; i < times; i++) {
-        for (let seasonIndex = 0; seasonIndex < 4; seasonIndex++) {
-            let season = world.seasons[seasonIndex];
-            applySeasonsRain(season, takeWater);
-        }
+        applySeasonsRain(evaporate);
     }
-
-    assignColors();
 }
 
-export function applySeasonsRain(season, takeWater) {
+//////////////////////////////////// Initialize
 
-        const windDirection = season.windDirection;
-
-        if (windDirection === "e") {
-            sendRainE(season.rainAmount, takeWater);
-        } else if (windDirection === "w") {
-            sendRainE(season.rainAmount, takeWater);
-        } else if (windDirection === "n") {
-            sendRainE(season.rainAmount, takeWater);
-        } else if (windDirection === "s") {
-            sendRainE(season.rainAmount, takeWater);
+function assignTempAndColor() {
+    loopGrid(
+        (square) => {
+            assignTempAndFillMissedElevationToSquare(square);
+            assignGridColorToSquare(square);
         }
-
-        spreadWater();
+    )
 }
 
+
+/////////////////////////////////// World Params
 export function setSeasons(moisture, temp) {
     const seasons = [];
     for (let index = 0; index < 4; index++) {
         seasons.push({
             windDirection: sample(directionArray),
-            rainAmount: random(1, 30) + moisture
+            rainAmount: random(1, 30) + moisture,
+            index
         });
     }
 
     return seasons;
 }
 
-export function initNewWorld(xSquares, ySquares) {
-    // world.elevationChange = random(1, 20);
-    world.globalMoisture = random(5, 20);
-    world.globalTemp = random(-20,20) / 10; //-2.0 - 2.0
-    world.seasons = setSeasons(world.globalMoisture, world.globalTemp);
-    world.zoomLevel = 2;
-    globalGrid.width = xSquares;
-    globalGrid.height = ySquares;
-    getInitialGrid(xSquares, ySquares)
-
-    return {
-        environmentGrid: [],
-        organismList: [],
-        selectedSquare: null,
-        selectedEnvironment: {
-            precipitation: 40,
-            avgElevation: 20,
-            elevationChange: 30,
-            baseTemp: 50,
-            color: randomColor("green")
-        },
-        world: {
-            ...world,
-            worldColorsGrid,
-            seasons: setSeasons()
-        },
-        numSeasons: 0,
-        worldColorsGrid,
-        grid: globalGrid
+function advanceSeason() {
+    let currentIndex = world.currentSeason.index;
+    if(currentIndex === 3) {
+        world.currentSeason = world.seasons[0];
+    } else {
+        world.currentSeason = world.seasons[currentIndex + 1];
     }
 }
 
-export function initMockWorld(mockGrid) {
-    // world.elevationChange = random(1, 20);
+export function initNewWorldParams() {
     world.globalMoisture = random(5, 20);
     world.globalTemp = random(-20, 20) / 10; //-2.0 - 2.0
     world.seasons = setSeasons(world.globalMoisture, world.globalTemp);
+    world.currentSeason = world.seasons[0];
     world.zoomLevel = 2;
-    globalGrid.width = mockGrid.length;
-    globalGrid.height = mockGrid.length;
-    getInitialGrid(xSquares, ySquares)
+}
+
+export function initNewWorld(height, width, grid) {
+    initNewWorldParams();
+    if(!grid) {
+        setRandomGlobalGrid(height, width);
+    } else {
+        globalGrid = grid;
+    }
+
+    assignSidesToGrid();
+
+    let randomSquare = getRandomFromGrid();
+    assignElevationFromSquare(randomSquare, 2);
+    assignTempAndColor();
 
     return {
-        environmentGrid: [],
-        organismList: [],
         selectedSquare: null,
-        selectedEnvironment: {
-            precipitation: 40,
-            avgElevation: 20,
-            elevationChange: 30,
-            baseTemp: 50,
-            color: randomColor("green")
-        },
         world: {
             ...world,
-            worldColorsGrid,
             seasons: setSeasons()
         },
         numSeasons: 0,
         worldColorsGrid,
-        grid: globalGrid
+        grid: {
+            gridArray: globalGrid,
+            height,
+            width
+        }
     }
 }

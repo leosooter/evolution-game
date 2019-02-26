@@ -3,21 +3,8 @@ import {APPLY_INITIAL_RAIN, APPLY_YEARLY_RAIN, SELECT_SQUARE} from "./types";
 import {random} from "../helpers/utilities";
 import {initNewWorld, applyYearsRain} from "../helpers/grid-helpers";
 
-function generateRandomEnvironment() {
-    const environment = {
-        precipitation: random(0,100),
-        avgElevation: random(0,100),
-        elevationChange: random(0,50),
-        baseTemp: random(0,100),
-    }
-
-    environment.color = applyYearlyRain(environment);
-
-    return environment;
-}
-
 // Max num squares per side 164
-const defaultState = initNewWorld(100,100);
+const defaultState = initNewWorld(165,165);
 
 function reducer(state=[], action) {
     console.log('Reducer action', action);

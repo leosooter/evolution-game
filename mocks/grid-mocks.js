@@ -45,8 +45,8 @@ let elevationValues = [
     [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
 ];
 
-let newGrid = mockGridBuilder(10, 0, {elevationValues: elevationValues});
+// let newGrid = mockGridBuilder(10, 0, {elevationValues: elevationValues});
 
-console.log('New Grid', newGrid);
+// console.log('New Grid', newGrid);
 
 

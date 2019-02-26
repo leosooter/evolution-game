@@ -1,11 +1,16 @@
 import React, {Component} from "react";
 import "./map.css";
+const viewTypes = {
+    elevation: "elevationStyle",
+    rainfall: "rainfallStyle",
+    temperature: "temperatureStyle",
+    groundColor: "groundColorStyle",
+    gridColor: "gridColorStyle"
+}
 
 class Map extends Component {
 
     handleSquareSelect = (index) => {
-        console.log('handleSquareSelect', index);
-
         this.props.selectSquare(index);
     }
 
@@ -13,15 +18,6 @@ class Map extends Component {
 
         const numSquares = this.props.grid.gridArray.length;
         const squareSize = 1000 / numSquares;
-
-        const viewTypes = {
-            elevation: "elevationStyle",
-            rainfall: "rainfallStyle",
-            temperature: "temperatureStyle",
-            groundColor: "groundColorStyle",
-            gridColor: "gridColorStyle"
-        }
-
         const viewTypeStyle = square[viewTypes[this.props.viewType]] || null;
 
         return {

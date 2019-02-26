@@ -4,10 +4,9 @@ import "./world-colors.css";
 class WorldColors extends Component {
 
     renderColors = () => {
-        console.log('renderColors', this.props);
-
         const colorsGrid = this.props.worldColorsGrid || [];
         let returnArray = [];
+        let index = 0;
 
         if(colorsGrid.length) {
             for (let i = 0; i < colorsGrid.length; i++) {
@@ -20,10 +19,11 @@ class WorldColors extends Component {
                         background: `rgb(${color.r}, ${color.g}, ${color.b})`
                     }
 
-                    returnRow.push(<div className="color" style={colorStyle}></div>)
+                    returnRow.push(<div key={index} className="color" style={colorStyle}></div>)
+                    index ++;
                 }
 
-                returnArray.push(<div className="colorRow">{returnRow}</div>);
+                returnArray.push(<div key={i} className="colorRow">{returnRow}</div>);
             }
         }
 
