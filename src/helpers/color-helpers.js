@@ -69,17 +69,15 @@ function getWaterColor(baseTemp) {
     return morphColor({r,g,b}, 2);
 }
 
-export function getGridColor(square) {
-    const waterLevel = 0;
-
+export function getGridColor(square, waterLevel = 0) {
     const {precipitation, avgElevation, baseTemp} = square;
     if(avgElevation <= waterLevel) {
         return getWaterColor(baseTemp);
     }
 
-    if(square.precipitation > 100) {
-        return {r: 255, g: 0, b: 0}
-    }
+    // if(square.precipitation > 100) {
+    //     return {r: 255, g: 0, b: 0}
+    // }
     // else if (square.precipitation === 100) {
     //     return {r: 255, g: 100, b: 100}
     // }

@@ -3,17 +3,23 @@ import {APPLY_INITIAL_RAIN, APPLY_YEARLY_RAIN, SELECT_SQUARE} from "./types";
 import {random} from "../helpers/utilities";
 import {initNewWorld, applyYearsRain} from "../helpers/grid-helpers";
 
-// Max num squares per side 164
-const defaultState = initNewWorld(165,165);
+const worldOptions = {
+    height: 110,
+    width: 160,
+    zoomLevel: 5,
+    waterLevel: 0
+}
+const defaultState = initNewWorld(worldOptions);
 
-function reducer(state=[], action) {
+function reducer(state, action) {
     console.log('Reducer action', action);
 
     switch (action.type) {
         case APPLY_INITIAL_RAIN:
 
             applyYearsRain(10, false);
-            state.numSeasons ++;
+
+            state.totalSeasons ++;
             return {
                 ...state
             }
@@ -22,7 +28,8 @@ function reducer(state=[], action) {
 
         case APPLY_YEARLY_RAIN:
             applyYearsRain(1, false);
-            state.numSeasons++;
+
+            state.totalSeasons++;
             return {
                 ...state
             }

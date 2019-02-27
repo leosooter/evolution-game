@@ -9,7 +9,7 @@ const squareSideArray = ["e", "s", "w", "n", "ne", "nw", "se", "sw"];
 const world = {};
 let globalGrid = [];
 let rainLeft;
-
+let totalSeasons = 0;
 
 ////////////////////////////////////////////////// Grid Utilities
 function getRandomFromGrid() {
@@ -108,6 +108,8 @@ export function newSquare(index, widthIndex, heightIndex, options={}) { // optio
         latitude : null,
         widthIndex,
         heightIndex,
+        allSidesArray: [],
+        mainSidesArray: [],
         n: null,
         s: null,
         e: null,
@@ -122,6 +124,7 @@ export function newSquare(index, widthIndex, heightIndex, options={}) { // optio
 }
 
 function setRandomGlobalGrid(height, width) {
+    let t0 = performance.now();
     let index = 0;
 
     for (let gridHeight = 0; gridHeight < height; gridHeight++) {
@@ -129,12 +132,16 @@ function setRandomGlobalGrid(height, width) {
 
         for (let gridWidth = 0; gridWidth < width; gridWidth++) {
             row.push(newSquare(index, gridWidth, gridHeight));
+            index ++;
         }
 
         globalGrid.push(row);
     }
-}
+    let t1 = performance.now();
 
+    console.log('setRandomGlobalGrid time', t1 - t0);
+
+}
 
 /////////////////////////////////////////////////// Elevation and Temp
 
@@ -156,27 +163,78 @@ function getElevation(currentElevation, power) {
 }
 
 function assignElevationFromSquare(current, power) {
-    const shuffledDirectionArray = shuffle(directionArray);
+    // const direction = shuffle(directionArray);
+
+    // if (current[direction[0]] && !current[direction[0]].avgElevation) {
+    //     current[direction[0]].avgElevation = getElevation(current.avgElevation, power);
+    //     current = current[direction[0]];
+    //     assignElevationFromSquare(current, power);
+    // }
+
+    // if (current[direction[1]] && !current[direction[1]].avgElevation) {
+    //     current[direction[1]].avgElevation = getElevation(current.avgElevation, power);
+    //     current = current[direction[1]];
+    //     assignElevationFromSquare(current, power);
+    // }
+
+    // if (current[direction[2]] && !current[direction[2]].avgElevation) {
+    //     current[direction[2]].avgElevation = getElevation(current.avgElevation, power);
+    //     current = current[direction[2]];
+    //     assignElevationFromSquare(current, power);
+    // }
+
+    // if (current[direction[3]] && !current[direction[3]].avgElevation) {
+    //     current[direction[3]].avgElevation = getElevation(current.avgElevation, power);
+    //     current = current[direction[3]];
+    //     assignElevationFromSquare(current, power);
+    // }
+    const shuffledDirectionArray = shuffle(current.mainSidesArray);
 
     for (let index = 0; index < shuffledDirectionArray.length; index++) {
-        if (current[shuffledDirectionArray[0]] && !current[shuffledDirectionArray[0]].avgElevation) {
-            current[shuffledDirectionArray[0]].avgElevation = getElevation(current.avgElevation, power);
-            current = current[shuffledDirectionArray[0]];
+        let side = shuffledDirectionArray[index];
+        if (!side.avgElevation) {
+            side.avgElevation = getElevation(current.avgElevation, power);
+            current = side;
             assignElevationFromSquare(current, power);
         }
     }
 }
 
+// function assignElevationFromSquare2(current, power) {
+//     const shuffledDirectionArray = shuffle(squareSideArray);
+//     let nextArray = []
+
+//     for (let index = 0; index < shuffledDirectionArray.length; index++) {
+//         if (current[shuffledDirectionArray[0]] && !current[shuffledDirectionArray[0]].avgElevation) {
+//             current[shuffledDirectionArray[0]].avgElevation = getElevation(current.avgElevation, power);
+
+//         }
+//     }
+// }
+
+function linkedListElevationAssign(start, power) {
+    let current = start;
+    let safety = 10000;
+
+    while(current && safety > 0) {
+        safety --;
+
+
+    }
+}
+
 function fillMissedElevation(square) {
-    shuffle(squareSideArray).forEach(side => {
-        if(square[side]) {
+    // console.log('fillMissedElevation', square.index);
+
+    shuffle(directionArray).forEach(side => {
+        if (square[side] && square[side].avgElevation) {
             square.avgElevation = square[side].avgElevation;
             return;
         }
     });
 }
 
-function assignTemp(square) {
+function assignTempToSquare(square) {
     let latitudeAdjust = (square.latitude * world.zoomLevel) / 3.7;
     let elevationAdjust = square.avgElevation * 1.2;
     let globalTemp = 140;
@@ -189,18 +247,17 @@ function assignTempAndFillMissedElevationToSquare(square) {
         fillMissedElevation(square);
     }
 
-    assignTemp(square);
+    assignTempToSquare(square);
 }
 
 //fill in any missed elevation and assign temp
 function assignTempToGrid() {
-    loopGrid(assignTempAndFillMissedElevation)
+    loopGrid(assignTempAndFillMissedElevationToSquare)
 }
-
 
 //////////////////////////////////// Colors
 function assignGridColorToSquare(square) {
-    square.gridColor = getGridColor(square);
+    square.gridColor = getGridColor(square, world.waterLevel);
     square.gridColorStyle = `rgb(${square.gridColor.r}, ${square.gridColor.g}, ${square.gridColor.b})`;
 
     let r = 100 - square.avgElevation;
@@ -232,21 +289,37 @@ export function assignSidesToSquare(square) {
 
     if (widthIndex > 0) {
         square.w = row[widthIndex - 1];
+        square.allSidesArray.push(square.w);
+        square.mainSidesArray.push(square.w);
+
         square.w.e = square;
+        square.w.allSidesArray.push(square);
+        square.w.mainSidesArray.push(square);
 
         if (heightIndex > 0) {
             square.nw = globalGrid[heightIndex - 1][widthIndex - 1];
+            square.allSidesArray.push(square.nw);
+
             square.nw.se = square;
+            square.nw.allSidesArray.push(square);
         }
     }
 
     if (heightIndex > 0) {
         square.n = globalGrid[heightIndex - 1][widthIndex];
+        square.allSidesArray.push(square.n);
+        square.mainSidesArray.push(square.n);
+
         square.n.s = square;
+        square.n.allSidesArray.push(square);
+        square.n.mainSidesArray.push(square);
 
         if (widthIndex < heightIndex - 1) {
             square.ne = globalGrid[heightIndex - 1][widthIndex + 1];
+            square.allSidesArray.push(square.ne);
+
             square.ne.sw = square;
+            square.ne.allSidesArray.push(square);
         }
     }
 }
@@ -287,19 +360,21 @@ function applyRain(square) {
     const rainChance = random(1, maxChance);
     const rainAmount = random(1, 3);
 
-    if (rainLeft > 0 && square.avgElevation > 0 && rainChance > 85) {
+    if (rainLeft > 0 && square.avgElevation > world.waterLevel && rainChance > 85) {
         square.precipitation += rainAmount;
         rainLeft -= rainAmount;
+        assignGridColorToSquare(square);
 
-    } else if (square.avgElevation <= 0) {
+    } else if (square.avgElevation <= world.waterLevel) {
         rainLeft += random(.05, .1);
     }
 }
 
 function applyEvaporation(square) {
-    if (square.avgElevation > 0 && square.precipitation) {
+    if (square.avgElevation > world.waterLevel && square.precipitation) {
         square.precipitation -= 2;
         square.precipitation = clamp(square.precipitation, 0, 150);
+        assignGridColorToSquare(square);
     }
 }
 
@@ -316,13 +391,18 @@ export function applySeasonsRain(evaporate) {
         rainType = applyRain;
     }
 
-    scanGridByDirection(world.currentSeason.windDirection, rainType, () => {rainLeft = world.currentSeason.rainAmount});
+    scanGridByDirection(world.currentSeason.windDirection, rainType, () => {
+        rainLeft = world.currentSeason.rainAmount
+    });
     advanceSeason();
 }
 
 export function applyYearsRain(times = 1, evaporate) {
+
     for (let i = 0; i < times; i++) {
-        applySeasonsRain(evaporate);
+        for (let j = 0; j < 4; j++) {
+            applySeasonsRain(evaporate);
+        }
     }
 }
 
@@ -334,7 +414,7 @@ function assignTempAndColor() {
             assignTempAndFillMissedElevationToSquare(square);
             assignGridColorToSquare(square);
         }
-    )
+    );
 }
 
 
@@ -359,18 +439,24 @@ function advanceSeason() {
     } else {
         world.currentSeason = world.seasons[currentIndex + 1];
     }
+
+    totalSeasons ++;
 }
 
-export function initNewWorldParams() {
+export function initNewWorldParams(zoomLevel, waterLevel) {
     world.globalMoisture = random(5, 20);
     world.globalTemp = random(-20, 20) / 10; //-2.0 - 2.0
     world.seasons = setSeasons(world.globalMoisture, world.globalTemp);
     world.currentSeason = world.seasons[0];
-    world.zoomLevel = 2;
+    world.zoomLevel = zoomLevel;
+    world.waterLevel = waterLevel;
 }
 
-export function initNewWorld(height, width, grid) {
-    initNewWorldParams();
+// Handles initial setup of a new world. Can be passed an optional pre-defined mock grid or world-params for testing
+export function initNewWorld(worldOprions) {
+    const{height, width, zoomLevel, waterLevel, grid, woldParams} = worldOprions;
+    initNewWorldParams(zoomLevel, waterLevel);  //Set random world parameters
+
     if(!grid) {
         setRandomGlobalGrid(height, width);
     } else {
@@ -380,8 +466,18 @@ export function initNewWorld(height, width, grid) {
     assignSidesToGrid();
 
     let randomSquare = getRandomFromGrid();
-    assignElevationFromSquare(randomSquare, 2);
-    assignTempAndColor();
+
+    //If a mock grid was not passed, or the mock grid does not set elevation, randomly generate elevation
+    if (!randomSquare.avgElevation) {
+        assignElevationFromSquare(randomSquare, 2);
+    }
+
+    //If a mock grid was not passed, or the mock grid does not set temp, assign temp and color
+    if (!randomSquare.baseTemp) {
+        assignTempAndColor();
+    } else {
+        assignGridColorsToGrid(); // If grid with pre-set temp was passed - only assign color
+    }
 
     return {
         selectedSquare: null,
@@ -389,7 +485,7 @@ export function initNewWorld(height, width, grid) {
             ...world,
             seasons: setSeasons()
         },
-        numSeasons: 0,
+        totalSeasons,
         worldColorsGrid,
         grid: {
             gridArray: globalGrid,

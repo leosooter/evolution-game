@@ -16,8 +16,8 @@ class Map extends Component {
 
     getSquareStyle = (square) => {
 
-        const numSquares = this.props.grid.gridArray.length;
-        const squareSize = 1000 / numSquares;
+        const gridWidth = this.props.grid.width;
+        const squareSize = 1100 / gridWidth;
         const viewTypeStyle = square[viewTypes[this.props.viewType]] || null;
 
         return {
@@ -56,9 +56,11 @@ class Map extends Component {
     }
 
     render() {
+        console.log('Map render', this.props.totalSeasons);
+
 
         return (
-            <div className="gridWrapper" key={this.props.numSeasons}>
+            <div className="gridWrapper" key={this.props.totalSeasons}>
                 {this.renderGrid()}
             </div>
         )

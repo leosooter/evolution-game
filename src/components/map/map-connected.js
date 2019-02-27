@@ -7,7 +7,7 @@ function mapStateToProps(state, ownProps) {
     return {
         view: ownProps.viewType,
         grid: state.grid,
-        numSeasons: state.numSeasons
+        totalSeasons: state.totalSeasons
     }
 }
 
