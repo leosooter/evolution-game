@@ -4,9 +4,9 @@ import {random} from "./utilities";
 
 const blankColor = {
     colorName: "blank",
-    r:255,
-    g:255,
-    b:255
+    r:25,
+    g:25,
+    b:25
 }
 
 export const colorTracker = {
@@ -62,17 +62,34 @@ export function morphColor(color, power = 3) {
 }
 
 function getWaterColor(baseTemp) {
-    let r = 1;
-    let b = baseTemp + 150;
-    let g = b - 50;
+    let r;
+    let g;
+    let b;
+    if (baseTemp <= 10 && random(0, baseTemp) <= 8) {
+        r = 235;
+        b = 255;
+        g = 245;
+    } else {
+        r = 1;
+        b = baseTemp + 150;
+        g = b - 50;
+    }
 
     return morphColor({r,g,b}, 2);
 }
 
 export function getGridColor(square, waterLevel = 0) {
     const {precipitation, avgElevation, baseTemp} = square;
-    if(avgElevation <= waterLevel) {
+    if (avgElevation <= waterLevel) {
         return getWaterColor(baseTemp);
+    }
+
+    if ((baseTemp <= 15 && precipitation > 5 && random(0, baseTemp) <= 10)) {
+        let r = 255;
+        let g = 255;
+        let b = 255;
+
+        return morphColor({r,g,b}, 5);
     }
 
     // if(square.precipitation > 100) {

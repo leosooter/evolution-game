@@ -1,6 +1,6 @@
-import {APPLY_INITIAL_RAIN, SELECT_SQUARE} from "./types";
+import {APPLY_INITIAL_RAIN, SELECT_SQUARE, APPLY_SEASONS_RAIN} from "./types";
 import {APPLY_YEARLY_RAIN} from "./types";
-import {GENERATE_GROUND_COLOR} from "./types";
+import {GENERATE_GROUND_COLOR, ADVANCE_SEASON} from "./types";
 
 export function applyInitialRain() {
     return {type: APPLY_INITIAL_RAIN};
@@ -12,11 +12,17 @@ export function applyYearlyRain() {
     };
 }
 
-// export function applyYearlyRain() {
-//     return {
-//         type: GENERATE_GROUND_COLOR
-//     };
-// }
+export function applySeasonsRain() {
+    return {
+        type: APPLY_SEASONS_RAIN
+    };
+}
+
+export function advanceSeason() {
+    return {
+        type: ADVANCE_SEASON
+    };
+}
 
 export function selectSquare(index) {
     return {

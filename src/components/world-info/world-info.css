@@ -1,17 +1,24 @@
 .worldInfoWrapper {
+    margin-top: 10px;
     margin-bottom: 20px;
+    width: 400px;
 }
 
-.worldInfoSquare {
+.seasonInfo {
+    display: inline-block;
     height: 200px;
     width: 200px;
     border: 1px solid black;
-    margin-top: 30px;
 }
 
 .worldInfoData {
+    display: inline-block;
+    vertical-align: top;
+    height: 200px;
+    width: 175px;
+    margin-left: 10px;
+    padding-left: 10px;
     border: 1px solid darkgreen;
-    width: 400px;
 }
 
 .worldInfoData h5 {

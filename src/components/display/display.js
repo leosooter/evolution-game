@@ -5,29 +5,30 @@ class Display extends Component{
 
     render() {
         const square = this.props.selectedSquare || {groundColor: {}}
-        console.log('square', square);
+        console.log('Selected square', square);
+        let elevationColor = square.avgElevation > 30 ? "white" : "black";
 
 
         return (
             <div className="displayWrapper">
-                <div className="displayInfo">
-                    <h5>Sqaure Details</h5>
-                    <div className="displayStat">P: <em>{square.precipitation}</em></div>
-                    <div className="displayStat">E: <em>{square.avgElevation}</em></div>
-                    {/* <div className="displayStat">Elevation Change: <em>{square.elevationChange}</em></div> */}
-                    <div className="displayStat">T: <em>{square.baseTemp}</em></div>
+                <div className="displaySquare" style={{background: square.gridColorStyle}}>
                 </div>
 
-                {/* <div className="displayInfo">
-                    <div className="displayStat">
-                        R: <em>{square.griddColor.r} |</em>
-                        G: <em>{square.griddColor.g} |</em>
-                        B: <em>{square.griddColor.b} |</em>
-                    </div>
-                </div> */}
+                <div className="displayInfo">
+                    <h5>Sqaure Details</h5>
 
-                <div className="displaySquare" style={{background: square.gridColorStyle}}>
-                    {/* {this.renderTrees()} */}
+                    <div className="displayStat precipStat" style={{background: square.rainfallStyle}}>
+                        Precipitation: <em>{square.precipitation}</em>
+                    </div>
+
+                    <div className="displayStat elevationStat" style={{background: square.elevationStyle, color: elevationColor}}>
+                        Elevation: <em>{square.avgElevation}</em>
+                    </div>
+
+                    <div className="displayStat tempStat" style={{background: square.temperatureStyle}}>
+                        Temperature: <em>{square.baseTemp}</em>
+                    </div>
+
                 </div>
             </div>
         )

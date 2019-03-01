@@ -10,8 +10,8 @@ const viewTypes = {
 
 class Map extends Component {
 
-    handleSquareSelect = (index) => {
-        this.props.selectSquare(index);
+    handleSquareSelect = (square) => {
+        this.props.selectSquare(square);
     }
 
     getSquareStyle = (square) => {
@@ -19,6 +19,15 @@ class Map extends Component {
         const gridWidth = this.props.grid.width;
         const squareSize = 1100 / gridWidth;
         const viewTypeStyle = square[viewTypes[this.props.viewType]] || null;
+
+        if(this.props.viewType === "gridColor") {
+            return {
+                ...square.cornerStyles,
+                height: `${squareSize}px`,
+                width: `${squareSize}px`,
+                background: viewTypeStyle
+            }
+        }
 
         return {
             height: `${squareSize}px`,
@@ -44,7 +53,7 @@ class Map extends Component {
                         key={j}
                         className="gridSquare"
                         style={squareStyle}
-                        onClick={this.handleSquareSelect.bind(this, square.index)}
+                        onClick={this.handleSquareSelect.bind(this, square)}
                     ></div>
                 );
             }
@@ -61,7 +70,9 @@ class Map extends Component {
 
         return (
             <div className="gridWrapper" key={this.props.totalSeasons}>
-                {this.renderGrid()}
+                <div className="gridBackground">
+                    {this.renderGrid()}
+                </div>
             </div>
         )
     }

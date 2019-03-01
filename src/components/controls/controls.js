@@ -2,15 +2,6 @@ import React, {Component} from "react";
 import "./controls.css";
 
 class Controls extends Component {
-    constructor(props) {
-        super(props)
-
-        this.state = {
-
-        }
-    }
-
-
     render() {
         return (
             <div className="controlsWrapper">
@@ -22,17 +13,13 @@ class Controls extends Component {
                     Yearly Rain
                 </button>
 
-                {/* <button className="controlButton" onClick={this.handleShrubColor}>
-                    Generate New Shrub Color
+                <button className="controlButton" onClick={this.props.applySeasonsRain}>
+                    Season's Rain
                 </button>
 
-                <button className="controlButton" onClick={this.handleTreeColor}>
-                    Generate New Tree Color
+                <button className="controlButton" onClick={this.props.advanceSeason}>
+                    Advance Season
                 </button>
-
-                <button className="controlButton" onClick={this.handleWaterColor}>
-                    Generate New Water Color
-                </button> */}
             </div>
         )
     }

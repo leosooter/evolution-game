@@ -1,29 +1,37 @@
 .displayWrapper {
     margin-bottom: 20px;
-}
-
-.displaySquare {
-    height: 200px;
-    width: 200px;
-    border: 1px solid black;
-    margin-top: 30px;
-}
-
-.displayInfo {
-    border: 1px solid darkgreen;
     width: 400px;
 }
 
-.displayInfo h5 {
-    text-align: center;
+.displaySquare {
+    display: inline-block;
+    height: 200px;
+    width: 200px;
+    border: 1px solid black;
+}
+
+.displayInfo {
+    display: inline-block;
+    vertical-align: top;
+    height: 200px;
+    width: 175px;
+    margin-left: 10px;
+    padding-left: 10px;
+    border: 1px solid darkgreen;
 }
 
 .displayStat {
-    display: inline-block;
-    color: darkgreen;
     margin-right: 10px;
 }
 
-.displayStat em {
+/* .displayStat em {
     color: black;
+} */
+
+/* .precipStat {
+    color: rgb(23, 63, 173);
 }
+
+.tempStat {
+    color: rgb(179, 36, 36);
+} */
