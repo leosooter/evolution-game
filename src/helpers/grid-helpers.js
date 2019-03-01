@@ -9,6 +9,9 @@ const squareSideArray = ["e", "s", "w", "n", "ne", "nw", "se", "sw"];
 const world = {};
 const startingTemp = 100;
 const EVAPORATION_RATE = .2;
+
+
+
 let globalGrid = [];
 let rainLeft;
 let totalSeasons = 0;
@@ -279,9 +282,9 @@ function assignGridColorToSquare(square) {
     b = 255 - square.baseTemp;
     square.temperatureStyle = `rgb(${r}, ${g}, ${b})`;
 
-    if(square.avgElevation > world.waterLevel) {
-        roundWaterCorners(square);
-    }
+    // if(square.avgElevation > world.waterLevel) {
+    //     roundWaterCorners(square);
+    // }
 }
 
 function assignGridColorsToGrid() {
@@ -418,6 +421,21 @@ export function applyYearsRain(times = 1, evaporate) {
     return getReturnState();
 }
 
+//////////////////////////////////// Global Moisture
+export function increaseMoisture(amount = 1) {
+    world.waterLevel += amount;
+    assignGridColorsToGrid();
+
+    return getReturnState();
+}
+
+export function decreaseMoisture(amount = 1) {
+    world.waterLevel -= amount;
+    assignGridColorsToGrid();
+
+    return getReturnState();
+}
+
 //////////////////////////////////// Initialize
 
 function assignTempAndColor() {
@@ -495,7 +513,7 @@ export function advanceSeason() {
 }
 
 export function initNewWorldParams(zoomLevel, waterLevel) {
-    world.globalMoisture = random(5, 20);
+    world.globalMoisture = random(15, 40);  // determines the number of times yearly rain will be applied to the map
     // world.globalTemp = random(.25, 3);
     world.globalTemp = 1;
     world.seasons = setSeasons(world.globalMoisture, world.globalTemp);

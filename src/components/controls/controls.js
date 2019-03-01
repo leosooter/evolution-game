@@ -20,6 +20,14 @@ class Controls extends Component {
                 <button className="controlButton" onClick={this.props.advanceSeason}>
                     Advance Season
                 </button>
+
+                <button className="controlButton" onClick={this.props.increaseMoisture}>
+                    Increase Moisture
+                </button>
+
+                <button className="controlButton" onClick={this.props.decreaseMoisture}>
+                    Decrease Moisture
+                </button>
             </div>
         )
     }

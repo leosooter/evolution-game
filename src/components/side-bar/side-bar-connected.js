@@ -11,6 +11,8 @@ function mapDispatchToProps(dispatch) {
         applyInitialRain: () => dispatch({type: "APPLY_INITIAL_RAIN"}),
         applySeasonsRain: () => dispatch({type: "APPLY_SEASONS_RAIN"}),
         advanceSeason: () => dispatch({type: "ADVANCE_SEASON"}),
+        increaseMoisture: () => dispatch({type: "INCREASE_MOISTURE"}),
+        decreaseMoisture: () => dispatch({type: "DECREASE_MOISTURE"}),
     }
 }
 
