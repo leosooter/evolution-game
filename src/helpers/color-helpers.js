@@ -88,7 +88,7 @@ function getSnowColor() {
 
 function getMountainColor() {
     let r = 125;
-        let g = 25;
+        let g = 125;
         let b = 135;
 
         return morphColor({r,g,b}, 5);
