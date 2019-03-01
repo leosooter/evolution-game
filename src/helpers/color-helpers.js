@@ -61,12 +61,12 @@ export function morphColor(color, power = 3) {
     }
 }
 
-function getWaterColor(baseTemp) {
+function getWaterColor(baseTemp, avgElevation) {
     let r;
     let g;
     let b;
-    if (baseTemp <= 10 && random(0, baseTemp) <= 8) {
-        r = 235;
+    if (baseTemp <= 10 && avgElevation >= -10 && random(0, baseTemp) <= 8) {
+        r = 235; // Ice color
         b = 255;
         g = 245;
     } else {
@@ -78,18 +78,35 @@ function getWaterColor(baseTemp) {
     return morphColor({r,g,b}, 2);
 }
 
-export function getGridColor(square, waterLevel = 0) {
-    const {precipitation, avgElevation, baseTemp} = square;
-    if (avgElevation <= waterLevel) {
-        return getWaterColor(baseTemp);
-    }
-
-    if ((baseTemp <= 15 && precipitation > 5 && random(0, baseTemp) <= 10)) {
-        let r = 255;
+function getSnowColor() {
+    let r = 255;
         let g = 255;
         let b = 255;
 
         return morphColor({r,g,b}, 5);
+}
+
+function getMountainColor() {
+    let r = 125;
+        let g = 25;
+        let b = 135;
+
+        return morphColor({r,g,b}, 5);
+}
+
+export function getGridColor(square, waterLevel = 0) {
+    const {precipitation, avgElevation, baseTemp} = square;
+
+    if (avgElevation <= waterLevel) {
+        return getWaterColor(baseTemp, square.avgElevation);
+    }
+
+    if ((baseTemp <= 15 && precipitation > 5 && random(0, baseTemp) <= 10)) {
+        return getSnowColor();
+    }
+
+    if(avgElevation >= 80) {
+        return getMountainColor();
     }
 
     // if(square.precipitation > 100) {

@@ -16,9 +16,6 @@ function reducer(state, action) {
     switch (action.type) {
         case APPLY_INITIAL_RAIN:
 
-            // const newState = applyYearsRain(10, false);
-
-            // newState.totalSeasons ++;
             return {
                 ...applyYearsRain(5, false)
             }
@@ -26,31 +23,21 @@ function reducer(state, action) {
         break;
 
         case APPLY_YEARLY_RAIN:
-            // const newState = applyYearsRain(1, false);
 
-            // newState.totalSeasons++;
             return {
                 ...applyYearsRain(15, true)
             }
         break;
 
         case APPLY_SEASONS_RAIN:
-            // const newState = applySeasonsRain(1, false);
 
-            // newState.totalSeasons++;
             return {
                 ...applySeasonsRain(15, false)
             }
         break;
 
         case ADVANCE_SEASON:
-            // console.log('Before', state.world.currentSeason);
 
-            // const newState = advanceSeason();
-
-            // console.log('After', newState.world.currentSeason);
-
-            // newState.totalSeasons++;
             return {
                 ...advanceSeason()
             }

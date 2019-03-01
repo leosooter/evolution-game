@@ -13,10 +13,9 @@ let globalGrid = [];
 let rainLeft;
 let totalSeasons = 0;
 let cornerRadius = 30;
-let baseTemp;
+let baseTemp = 100;
 let mapHeight;
 let mapWidth;
-let recursionCount = 1000;
 
 ////////////////////////////////////////////////// Grid Utilities
 function getRandomFromGrid() {
@@ -39,30 +38,6 @@ function loopGrid(callBack, outerCallBack) {
         for (let widthIndex = 0; widthIndex < gridWidth; widthIndex++) {
             const square = globalGrid[heightIndex][widthIndex];
             callBack(square);
-        }
-    }
-}
-
-function trackFromPoint(square, callback, direction, distance) {
-    let current = square;
-
-    for (let index = 0; index < distance; index++) {
-        callback(current);
-        if(!current[direction]) {
-            break;
-        }
-
-        current = current[direction];
-    }
-
-    return current;
-}
-
-function spriralFromPoint(square, callBack, power, random = true) {
-    let current = square;
-    for (let i = 0; i < power; i++) {
-        for (let j = 0; j < directionArray.length; j++) {
-            return;
         }
     }
 }
@@ -194,24 +169,7 @@ function getElevation(currentElevation, power) {
     return finalElevation;
 }
 
-// function assignElevationFromSquare(current, variance) {
-//     recursionCount--;
-
-//     const shuffledDirectionArray = shuffle(current.mainSidesArray);
-
-//     for (let index = 0; index < shuffledDirectionArray.length; index++) {
-//         let side = shuffledDirectionArray[index];
-//         if (!side.avgElevation && recursionCount > 0) {
-//             side.avgElevation = getElevation(current.avgElevation, variance);
-//             current = side;
-//             assignElevationFromSquare(current, variance);
-//         }
-//     }
-// }
-
 function assignElevationFromSquare(current, variance) {
-    recursionCount --;
-
     const shuffledDirectionArray = shuffle(current.mainSidesArray);
 
     for (let index = 0; index < shuffledDirectionArray.length; index++) {
@@ -234,43 +192,6 @@ function assignElevationFromPointsOnGrid(times, variance, depth = 1000) {
     }
 }
 
-// function assignElevationFromSquare2(current, power) {
-//     const shuffledDirectionArray = shuffle(squareSideArray);
-//     let nextArray = []
-
-//     for (let index = 0; index < shuffledDirectionArray.length; index++) {
-//         if (current[shuffledDirectionArray[0]] && !current[shuffledDirectionArray[0]].avgElevation) {
-//             current[shuffledDirectionArray[0]].avgElevation = getElevation(current.avgElevation, power);
-
-//         }
-//     }
-// }
-
-// function assignElevationFromPoint(square, power) {
-//     let assignArray = [square];
-//     let length = power;
-//     for (let i = 0; i < length; i++) {
-//         const current = assignArray[i];
-
-//         let sideIndex = 0;
-//         let sideLength = square.mainSidesArray.length;
-
-//         for (sideIndex; sideIndex < sideLength;sideIndex++) {
-//             let side = current.mainSidesArray[sideIndex]
-//             if (!side.avgElevation) {
-//                 side.avgElevation = 100;
-//             }
-//         }
-//     }
-// }
-
-// function assignElevationFromPointsOnGrid(times, power) {
-//     for (let index = 0; index < times; index++) {
-//         let square = getRandomFromGrid();
-//         assignElevationFromPoint(square, power);
-//     }
-// }
-
 function linkedListElevationAssign(start, power) {
     let current = start;
     let safety = 10000;
@@ -283,8 +204,6 @@ function linkedListElevationAssign(start, power) {
 }
 
 function fillMissedElevation(square) {
-    // console.log('fillMissedElevation', square.index);
-
     shuffle(directionArray).forEach(side => {
         if (square[side] && square[side].avgElevation) {
             square.avgElevation = square[side].avgElevation;
@@ -294,20 +213,14 @@ function fillMissedElevation(square) {
 }
 
 function assignTempToSquare(square) {
-    // let latitudeAdjust = (square.latitude * world.zoomLevel) / 3.7;
-    // let elevationAdjust = square.avgElevation * 1.2;
+    console.log('baseTemp', baseTemp);
+
     let heightIndex = square.heightIndex > 0 ? square.heightIndex : 1;
     let elevation = square.avgElevation > 0 ? square.avgElevation : 1;
-    // console.log('mapHeight', mapHeight);
 
     let latitudeAdjust = (heightIndex / mapHeight);
     let elevationAdjust = ((100 - elevation) / 100);
-    // let latitudeAdjust = 1;
-
-    // console.log('heightIndex', square.heightIndex, 'latitudeAdjust', latitudeAdjust);
-    // console.log('avgElevation', square.avgElevation, 'elevationAdjust', elevationAdjust);
     square.baseTemp = Math.floor((baseTemp * latitudeAdjust ) * elevationAdjust);
-    // square.baseTemp = square.baseTemp > 100 ? 100 : square.baseTemp;
     square.baseTemp = clamp(square.baseTemp, 0, 100);
 }
 
@@ -583,7 +496,7 @@ export function advanceSeason() {
 
 export function initNewWorldParams(zoomLevel, waterLevel) {
     world.globalMoisture = random(5, 20);
-    // world.globalTemp = random(.8, 1.2);
+    // world.globalTemp = random(.25, 3);
     world.globalTemp = 1;
     world.seasons = setSeasons(world.globalMoisture, world.globalTemp);
     world.currentSeason = world.seasons[0];
@@ -631,24 +544,21 @@ export function initNewWorld(worldOptions) {
 
     assignSidesToGrid();
 
-    assignElevationFromPointsOnGrid(100, 2, 1000);
-
-    // let randomSquare = getRandomFromGrid();
-    // assignElevationFromSquare(randomSquare, 2);
+    let randomSquare = getRandomFromGrid();
+    assignElevationFromSquare(randomSquare, 2);
 
     // //If a mock grid was not passed, or the mock grid does not set elevation, randomly generate elevation
-    // if (!randomSquare.avgElevation) {
-    //     assignElevationFromSquare(randomSquare, 2);
-    // }
+    if (!randomSquare.avgElevation) {
+        assignElevationFromSquare(randomSquare, 2);
+    }
 
     // If a mock grid was not passed, or the mock grid does not set temp, assign temp and color
-    // if (!randomSquare.baseTemp) {
-    //     assignTempAndColor();
-    // } else {
-    //     assignGridColorsToGrid(); // If grid with pre-set temp was passed - only assign color
-    // }
+    if (!randomSquare.baseTemp) {
+        assignTempAndColor();
+    } else {
+        assignGridColorsToGrid(); // If grid with pre-set temp was passed - only assign color
+    }
 
-    assignTempAndColor();
     let t2 = performance.now();
 
     console.log('Init time', t2 - t1);
