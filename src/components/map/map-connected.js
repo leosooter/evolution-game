@@ -1,5 +1,5 @@
 import {connect} from "react-redux";
-import Map from "./map";
+import MapView from "./index";
 
 function mapStateToProps(state, ownProps) {
     console.log('Map, mapState', state);
@@ -17,4 +17,4 @@ function mapDispatchToProps(dispatch) {
     }
 }
 
-export default connect(mapStateToProps, mapDispatchToProps)(Map);
+export default connect(mapStateToProps, mapDispatchToProps)(MapView);

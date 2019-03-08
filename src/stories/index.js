@@ -4,6 +4,8 @@ import { storiesOf } from '@storybook/react';
 import { action } from '@storybook/addon-actions';
 import { linkTo } from '@storybook/addon-links';
 import App from "../../src/App";
+import AnimalApp from "../../src/animal-app";
+import LoopTest from "../helpers/function-tests";
 
 storiesOf('Grid', module)
 .add('Elevation', () => (
@@ -22,30 +24,13 @@ storiesOf('Grid', module)
   <App view="map" viewType="gridColor"/>
 ))
 
+storiesOf('Test', module)
+  .add('loop-test', () => (
+    <LoopTest />
+  ));
 
-storiesOf('MockGrid', module)
-  .add('Elevation', () => ( <
-    App view = "map"
-    viewType = "elevation"
-    mock = {true} / >
-  ))
-  .add('Rainfall', () => ( <
-    App view = "map"
-    viewType = "rainfall"
-    mock = {true} / >
-  ))
-  .add('Temperature', () => ( <
-    App view = "map"
-    viewType = "temperature"
-    mock = {true} / >
-  ))
-  .add('Ground Color', () => ( <
-    App view = "map"
-    viewType = "groundColor"
-    mock = {true} / >
-  ))
-  .add('Grid Color', () => ( <
-    App view = "map"
-    viewType = "gridColor"
-    mock = {true} / >
-  ))
+
+storiesOf('Animal', module)
+    .add('animal-generator', () => (
+      <AnimalApp />
+    ));

@@ -1,0 +1,73 @@
+.animal-gallery {
+    position: absolute;
+}
+
+.animal-wrapper {
+    position: relative;
+    margin: 10px;
+    display: inline-block;
+    min-width: 400px;
+    font-size: 12px;
+}
+
+.animal div {
+    border-radius: 10%;
+    /* border: 1px solid black; */
+    position: absolute;
+}
+
+.animal {
+    position: relative;
+    margin-top: 8px;
+}
+
+.animal-wrapper span {
+    margin-right: 10px;
+}
+
+.acceleration {
+    color: red;
+}
+
+.speed{
+    color: green;
+}
+
+.endurance {
+    color: orange;
+}
+
+.detail-stats {
+    display: none;
+}
+
+.animal div {
+    background: rgb(88, 59, 35);
+}
+
+
+.body {
+    border-radius: 10%;
+    background-color: rgb(105, 72, 45);
+}
+
+.legs {
+    border-top-left-radius: 10%;
+    border-top-right-radius: 10%;
+    /* transform-origin: 50% 10px; */
+    /* transform: rotate(10deg); */
+    background-color: rgb(206, 131, 45);
+}
+
+.controls-wrapper {
+    position: absolute;
+    right: 10px;
+    width: 20%;
+}
+
+.main-button {
+    margin: 10px;
+    background-color: rgb(60, 90, 124);
+}
+
+

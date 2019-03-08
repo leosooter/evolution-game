@@ -1,0 +1,12 @@
+.controlsWrapper{
+    display: flex;
+    vertical-align: top;
+}
+
+.controlColumn {
+    display: inline-flex;
+}
+
+.controlButton {
+    display: block;
+}

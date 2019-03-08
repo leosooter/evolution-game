@@ -1,5 +1,5 @@
 import {sample, shuffle, clamp} from "lodash";
-import {applyYearlyRain, getGridColor, colorTracker, randomColor} from "./color-helpers";
+import {getGridColor, colorTracker, randomColor} from "./color-helpers";
 import {worldColorsGrid} from "../config/colors-config";
 import {random} from "./utilities";
 import gridMocks from "../../mocks/grid-mocks";
@@ -13,12 +13,24 @@ const EVAPORATION_RATE = .2;
 
 
 let globalGrid = [];
+let globalZoomArray = [];
 let rainLeft;
 let totalSeasons = 0;
 let cornerRadius = 30;
 let baseTemp = 100;
 let mapHeight;
 let mapWidth;
+let mapZoomHeight;
+let mapZoomWidth;
+let isZoomed = false;
+
+
+let wSlope = null;
+let nSlope = null;
+let slopeArray = [-1, 0, 1];
+let power;
+let changeChance;
+let lineArray = [];
 
 ////////////////////////////////////////////////// Grid Utilities
 function getRandomFromGrid() {
@@ -186,25 +198,138 @@ function assignElevationFromSquare(current, variance) {
 }
 
 function assignElevationFromPointsOnGrid(times, variance, depth = 1000) {
-    for (let index = 0; index < times; index++) {
-        recursionCount = depth;
-        let randomSquare = getRandomFromGrid();
-        randomSquare.avgElevation = random(-20,80);
 
-        assignElevationFromSquare(randomSquare, variance);
-    }
 }
 
-function linkedListElevationAssign(start, power) {
-    let current = start;
-    let safety = 10000;
-
-    while(current && safety > 0) {
-        safety --;
-
-
+function assignElevationFromTwoPoints(square) {
+    if (square.n && square.n.avgElevation >= 100) {
+        nSlope = -1;
+    } else if (square.n && square.n.avgElevation <= -20) {
+        nSlope = 1;
+    } else if (random(0, changeChance) === 0) {
+        nSlope = sample(slopeArray);
     }
+
+    let nElevation = square.n && square.n.avgElevation + (random(0, power) * nSlope);
+
+    if (square.w && square.w.avgElevation >= 100) {
+        wSlope = -1;
+    } else if (square.w && square.w.avgElevation <= -20) {
+        wSlope = 1;
+    } else if (random(0, changeChance) === 0) {
+        wSlope = sample(slopeArray);
+    }
+
+    let wElevation = square.w && square.w.avgElevation + (random(0, power) * wSlope);
+    let avg = Math.round((wElevation + nElevation) / 2);
+
+    square.avgElevation = clamp(avg, -20, 100);
+
+    return; ///////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+
+
+
+    if (random(0, changeChance) === 0) {
+        wSlope = sample(slopeArray);
+    }
+    if (random(0, changeChance) === 0) {
+        nSlope = sample(slopeArray);
+    }
+
+    let avgElevation = square.n.avgElevation;
+
+    if(square.w) {
+        avgElevation = Math.floor((avgElevation + square.w.avgElevation) / 2);
+        console.log('square.w.avgElevation', square.w.avgElevation, "wSlope", wSlope);
+    }
+
+
+
+    let wChange = (square.w && square.w.avgElevation + (random(0, power) * wSlope) || 0);
+    // let wChange = 0;
+    let nChange = square.n && square.n.avgElevation + (random(0, power) * nSlope);
+
+    let totalChange = Math.floor((wChange + nChange) / 2);
+    console.log('wChange', wChange);
+    console.log('nChange', nChange);
+
+
+    console.log('totalChange', totalChange);
+
+
+    square.avgElevation = avgElevation + totalChange;
 }
+
+function assignInitialLine(square) {
+
+    if(square.w && square.w.avgElevation >= 100) {
+        wSlope = -1;
+    } else if (square.w && square.w.avgElevation <= -20) {
+        wSlope = 1;
+    } else if(random(0, changeChance) === 0) {
+        wSlope = sample(slopeArray);
+    }
+
+    square.avgElevation = square.w && square.w.avgElevation + (random(0, power) * wSlope);
+}
+
+function assignElevation(square) {
+    console.log('square, power, changeChance', square, power, changeChance);
+
+    if(square.n) {
+        assignElevationFromTwoPoints(square);
+        return;
+    }
+
+    assignInitialLine(square);
+}
+
+function assignFromLeft(p = 15, c = 3) {
+    console.log('assignFromLeft(p, c)', p, c);
+
+    power = p;
+    changeChance = c;
+    wSlope = sample(slopeArray);
+    let startingElevation = random(-10, 90);
+    let start = globalGrid[0][0];
+    start.avgElevation = startingElevation;
+    loopGrid(assignElevation);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 function fillMissedElevation(square) {
     shuffle(directionArray).forEach(side => {
@@ -216,15 +341,13 @@ function fillMissedElevation(square) {
 }
 
 function assignTempToSquare(square) {
-    console.log('baseTemp', baseTemp);
-
     let heightIndex = square.heightIndex > 0 ? square.heightIndex : 1;
     let elevation = square.avgElevation > 0 ? square.avgElevation : 1;
 
     let latitudeAdjust = (heightIndex / mapHeight);
     let elevationAdjust = ((100 - elevation) / 100);
     square.baseTemp = Math.floor((baseTemp * latitudeAdjust ) * elevationAdjust);
-    square.baseTemp = clamp(square.baseTemp, 0, 100);
+    square.baseTemp = clamp(square.baseTemp, 0, 120);
 }
 
 function assignTempAndFillMissedElevationToSquare(square) {
@@ -264,7 +387,7 @@ function roundWaterCorners(square) {
 
 //////////////////////////////////// Colors
 function assignGridColorToSquare(square) {
-    square.gridColor = getGridColor(square, world.waterLevel);
+    square.gridColor = getGridColor(square, world.waterLevel, world.currentSeason.name);
     square.gridColorStyle = `rgb(${square.gridColor.r}, ${square.gridColor.g}, ${square.gridColor.b})`;
 
     let r = 100 - square.avgElevation;
@@ -397,6 +520,8 @@ export function applyRainAndEvaporation(square) {
 
 
 export function applySeasonsRain(evaporate) {
+    console.log('applySeasonsRain');
+
     let rainType = applyRainAndEvaporation;
     if(!evaporate) {
         rainType = applyRain;
@@ -411,12 +536,15 @@ export function applySeasonsRain(evaporate) {
 }
 
 export function applyYearsRain(times = 1, evaporate) {
+    console.log('Applying years rain', times);
 
     for (let i = 0; i < times; i++) {
         for (let j = 0; j < 4; j++) {
             applySeasonsRain(evaporate);
         }
     }
+    console.log('Done with years rain');
+
 
     return getReturnState();
 }
@@ -517,7 +645,7 @@ export function initNewWorldParams(zoomLevel, waterLevel) {
     // world.globalTemp = random(.25, 3);
     world.globalTemp = 1;
     world.seasons = setSeasons(world.globalMoisture, world.globalTemp);
-    world.currentSeason = world.seasons[0];
+    world.currentSeason = world.seasons[2];
     world.zoomLevel = zoomLevel;
     world.waterLevel = waterLevel;
 
@@ -538,8 +666,12 @@ function getReturnState() {
         worldColorsGrid,
         grid: {
             gridArray: globalGrid,
+            zoomArray: globalZoomArray,
             height: mapHeight,
-            width: mapWidth
+            width: mapWidth,
+            mapZoomHeight,
+            mapZoomWidth,
+            isZoomed
         }
     }
 }
@@ -562,20 +694,24 @@ export function initNewWorld(worldOptions) {
 
     assignSidesToGrid();
 
+    // assignFromLeft();
+
     let randomSquare = getRandomFromGrid();
     assignElevationFromSquare(randomSquare, 2);
 
-    // //If a mock grid was not passed, or the mock grid does not set elevation, randomly generate elevation
-    if (!randomSquare.avgElevation) {
-        assignElevationFromSquare(randomSquare, 2);
-    }
+    applyYearsRain(40, false);
 
-    // If a mock grid was not passed, or the mock grid does not set temp, assign temp and color
-    if (!randomSquare.baseTemp) {
-        assignTempAndColor();
-    } else {
-        assignGridColorsToGrid(); // If grid with pre-set temp was passed - only assign color
-    }
+    // // //If a mock grid was not passed, or the mock grid does not set elevation, randomly generate elevation
+    // if (!randomSquare.avgElevation) {
+    //     assignElevationFromSquare(randomSquare, 2);
+    // }
+
+    // // If a mock grid was not passed, or the mock grid does not set temp, assign temp and color
+    // if (!randomSquare.baseTemp) {
+    //     assignTempAndColor();
+    // } else {
+    //     assignGridColorsToGrid(); // If grid with pre-set temp was passed - only assign color
+    // }
 
     let t2 = performance.now();
 
@@ -583,3 +719,100 @@ export function initNewWorld(worldOptions) {
 
     return getReturnState();
 }
+
+
+/////////////////////////////////////////////// Terra Form
+// export function moveTime(params) {
+//     const {years, moisture} = params;
+//     console.log('moisture', moisture);
+
+
+//     for (let year = 0; year < years; year++) {
+//         world.waterLevel += 10;
+
+//         applyYearsRain(1, false);
+//     }
+
+//     return getReturnState();
+// }
+
+export function moveTime(params) {
+    let {years, moisture} = params;
+    let yearsIncrease = Number(years);
+    let waterIncrease = Number(moisture) * yearsIncrease;
+    increaseMoisture(waterIncrease);
+
+    // applyYearsRain(yearsIncrease, false);
+
+    return getReturnState();
+}
+
+function newZoomSquare(square) {
+    console.log('newZoomSquare');
+
+    return square;
+}
+
+
+export function toggleZoom(square, zoomHeight = 9, zoomWidth = 15) {
+
+    isZoomed = !isZoomed;
+    if (!isZoomed) {
+        globalZoomArray = [];
+        return getReturnState();
+    }
+
+    console.log('grid helper zooming', square);
+    mapZoomHeight = zoomHeight;
+    mapZoomWidth = zoomWidth;
+
+
+    let heightIndex = clamp(square.heightIndex - Math.floor(zoomHeight / 2), 0, mapHeight);
+    let widthIndex = clamp(square.widthIndex - Math.floor(zoomWidth / 2), 0, mapWidth);
+    let heightLength = heightIndex + zoomHeight;
+    let widthLength = widthIndex + zoomWidth;
+
+    console.log('heightIndex', heightIndex);
+    console.log('widthIndex', widthIndex);
+
+    let outerCount = 0;
+    let innerCount = 0;
+
+    for (heightIndex; heightIndex < heightLength; heightIndex++) {
+        outerCount ++;
+        let row = [];
+        for (let index = widthIndex; index < widthLength; index++) {
+            row.push(newZoomSquare(globalGrid[heightIndex][index]));
+            innerCount ++;
+        }
+
+        globalZoomArray.push(row);
+    }
+
+    console.log('After zoom loop', globalZoomArray, outerCount, innerCount);
+
+    return getReturnState();
+}
+
+//////////////////////////////////////// build from adjacent
+/*
+possible approaches
+1) build out from upper left. First square sets elevation with option ot overflow a short distance onto adjacent squares.
+Adjacent squares set elevation without overwriting existing
+
+2) treat entire grid of squares as single grid apply elevation "randomly" but with weight on local elevation.
+Treat center point of square as elevation point.
+
+
+//////////////////////////////////////// Build detailed grid from basic grid
+Given a master grid with x squares each with an elevation, build a grid of y * x squares that slopes from one elevation point
+to another with the boundaries set by the initial master grid.
+
+Needed- function that takes four points as reference - nearest e,w,n,s - returns a semi-weighted random that reflects it's
+relative proximity to each point.
+
+//////////////////////////////////////// Single pass elevation grid
+from top-left scan right assigning semi-random elevation
+on next row-weight elevation based on square above.
+
+*/

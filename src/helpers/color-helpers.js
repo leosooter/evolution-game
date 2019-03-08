@@ -1,5 +1,5 @@
-import {sample} from "lodash";
-import {colorAdjust, worldColorsGrid} from "../config/colors-config";
+import {sample, clamp} from "lodash";
+import {colorAdjust, worldColorsGrid, riverArray, fallArray} from "../config/colors-config";
 import {random} from "./utilities";
 
 const blankColor = {
@@ -78,6 +78,25 @@ function getWaterColor(baseTemp, avgElevation) {
     return morphColor({r,g,b}, 2);
 }
 
+function getRiverColor(temp) {
+    console.log('river temp', temp, "riverArray.length", riverArray.length);
+    const arrayAdjust = 100 / riverArray.length;
+
+    let tempIndex = clamp(Math.round((temp + 1) / arrayAdjust), 0, riverArray.length - 1);
+    console.log('river tempIndex', tempIndex);
+    return riverArray[tempIndex];
+}
+
+function getFallColor(temp) {
+    console.log('fall temp', temp, "fallArray.length", fallArray.length);
+    const arrayAdjust = 100 / fallArray.length;
+
+    let tempIndex = clamp(Math.round((temp + 1) / arrayAdjust), 0, fallArray.length - 1);
+    console.log('fall tempIndex', tempIndex);
+
+    return fallArray[tempIndex];
+}
+
 function getSnowColor() {
     let r = 255;
         let g = 255;
@@ -94,7 +113,7 @@ function getMountainColor() {
         return morphColor({r,g,b}, 5);
 }
 
-export function getGridColor(square, waterLevel = 0) {
+export function getGridColor(square, waterLevel = 0, season) {
     const {precipitation, avgElevation, baseTemp} = square;
 
     if (avgElevation <= waterLevel) {
@@ -107,6 +126,14 @@ export function getGridColor(square, waterLevel = 0) {
 
     if(avgElevation >= 80) {
         return getMountainColor();
+    }
+
+    if(precipitation > 100) {
+        return getRiverColor(baseTemp)
+    }
+
+    if(precipitation > 80 && season === "Fall") {
+        return getFallColor(baseTemp);
     }
 
     // if(square.precipitation > 100) {
@@ -149,21 +176,21 @@ export function getGridColor(square, waterLevel = 0) {
     return morphColor({r,g,b}, 5);
 }
 
-export function applyYearlyRain(square) {
-    const waterLevel = 0;
-    const {precipitation, avgElevation, baseTemp} = square;
-    if(avgElevation <= waterLevel) {
-        return getWaterColor(baseTemp);
-    }
+// export function applyYearlyRain(square) {
+//     const waterLevel = 0;
+//     const {precipitation, avgElevation, baseTemp} = square;
+//     if(avgElevation <= waterLevel) {
+//         return getWaterColor(baseTemp);
+//     }
 
-    let g = Math.floor(200 - (avgElevation / 3)) + colorAdjust.g;
-    let r = Math.floor(g * (1.25 - ((precipitation / 100) * 1.25))) + colorAdjust.g;
-    let b = Math.floor(100 - baseTemp + 1) + colorAdjust.b;
+//     let g = Math.floor(200 - (avgElevation / 3)) + colorAdjust.g;
+//     let r = Math.floor(g * (1.25 - ((precipitation / 100) * 1.25))) + colorAdjust.g;
+//     let b = Math.floor(100 - baseTemp + 1) + colorAdjust.b;
 
-    return morphColor({r,g,b}, 3);
+//     return morphColor({r,g,b}, 3);
 
-    //desert brown r230 g160 b75
-}
+//     //desert brown r230 g160 b75
+// }
 
 export function randomColor(colorType) {
 

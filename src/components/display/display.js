@@ -4,6 +4,8 @@ import "./display.css";
 class Display extends Component{
 
     render() {
+        console.log('Display props', this.props);
+
         const square = this.props.selectedSquare || {groundColor: {}}
         console.log('Selected square', square);
         let elevationColor = square.avgElevation > 30 ? "white" : "black";

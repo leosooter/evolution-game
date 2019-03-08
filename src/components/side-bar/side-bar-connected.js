@@ -13,6 +13,8 @@ function mapDispatchToProps(dispatch) {
         advanceSeason: () => dispatch({type: "ADVANCE_SEASON"}),
         increaseMoisture: () => dispatch({type: "INCREASE_MOISTURE"}),
         decreaseMoisture: () => dispatch({type: "DECREASE_MOISTURE"}),
+        moveTime: (payload) => dispatch({type: "MOVE_TIME", payload}),
+        toggleZoom: () => dispatch({type: "TOGGLE_ZOOM"})
     }
 }
 

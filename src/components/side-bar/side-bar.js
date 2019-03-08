@@ -1,6 +1,7 @@
 import React, {Component} from "react";
 
-import Controls from "../controls/controls";
+import Controls from "../controls/basic-controls/controls";
+import TerraformControls from "../controls/terraform-controls/terraform-controls";
 import Display from "../display/display";
 import WorldColors from "../world-colors/world-colors";
 import WorldInfo from "../world-info/world-info";
@@ -13,8 +14,9 @@ class SideBar extends Component{
         return (
             <div className="sideBarWrapper">
                 <Controls {...this.props} />
+                <TerraformControls {...this.props} />
                 <WorldInfo {...this.props.world}/>
-                <Display selectedSquare={this.props.selectedSquare} />
+                <Display {...this.props} />
                 <WorldColors worldColorsGrid={this.props.worldColorsGrid} />
             </div>
         )

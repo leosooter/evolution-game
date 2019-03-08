@@ -5,6 +5,7 @@ class WorldInfo extends Component{
     render() {
         const {
             globalMoisture,
+            waterLevel,
             globalTemp,
             zoomLevel,
             currentSeason,
@@ -29,6 +30,7 @@ class WorldInfo extends Component{
                     <h5>World Info</h5>
                     <div className="worldInfoStat">Global Temp Modifier: <em>{globalTemp}</em></div>
                     <div className="worldInfoStat">Global Moisture: <em>{globalMoisture}</em></div>
+                    <div className="worldInfoStat">Water Level: <em>{waterLevel}</em></div>
                     <div className="worldInfoStat">Zoom Level: <em>{zoomLevel}</em></div>
                 </div>
             </div>
