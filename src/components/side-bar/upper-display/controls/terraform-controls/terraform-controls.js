@@ -28,7 +28,6 @@ class TerraformControls extends Component {
     }
 
     render() {
-        console.log('terraform props', this.props);
 
         return (
             <div className="terraformControlsWrapper">

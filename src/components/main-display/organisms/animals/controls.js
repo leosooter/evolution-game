@@ -1,5 +1,5 @@
 import React from "react";
-import {animalTemplate} from "../../../helpers/animal-helpers/generate-new-animal";
+import {animalTemplate} from "../../../../helpers/animal-helpers/generate-new-animal";
 import {cloneDeep} from "lodash";
 
 class Controls extends React.Component {

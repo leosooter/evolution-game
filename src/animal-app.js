@@ -2,8 +2,8 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import {random, sample, compact, cloneDeep} from "lodash";
 
-import Animal from "./components/organisms/animals/animal";
-import Controls from "./components/organisms/animals/controls";
+import Animal from "./components/main-display/organisms/animals/animal";
+import Controls from "./components/main-display/organisms/animals/controls";
 import {generateNewAnimal, generateDefinedAnimal, generateTraitsEvolvedAnimal} from "./helpers/animal-helpers/generate-new-animal";
 import {evolveAnimalForTrait, randomEvolveAnimal} from "./helpers/animal-helpers/evolve-animal";
 import {weightedChance} from './helpers/animal-helpers/calculate.js';
@@ -20,7 +20,7 @@ class AnimalApp extends React.Component {
   }
 
   handleTestClick = () => {
-    console.log(weightedChance(testArray, "E"));
+
   }
 
   handleClearClick = () => {

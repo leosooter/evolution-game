@@ -1,0 +1,34 @@
+.lifeformDisplayWrapper {
+    display: flex;
+    flex-direction: row;
+    width: 60%;
+    margin-left: 10px;
+    padding-left: 10px;
+    align-items: flex-start;
+    justify-content: space-between;
+}
+
+.lifeform {
+    margin-top: 10px;
+}
+
+.plants {
+    height: 200px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+.lifeformDetails {
+    margin-left: 10px;
+    padding-left: 10px;
+}
+
+.plantProfile {
+    width: 430px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}

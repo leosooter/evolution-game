@@ -169,8 +169,6 @@ function findLowestSide(square) {
         const side = square[squareSideArray[i]];
 
         if (side && side.avgElevation + side.waterElevation < lowSideHeight) {
-            // console.log('setting lowSide to', side.avgElevation);
-
             lowSideHeight = side.avgElevation + side.waterElevation;
             lowSide = side;
         } else if (side && side.avgElevation + side.waterElevation === square.avgElevation + square.waterElevation) {
@@ -185,11 +183,7 @@ function findLowestSide(square) {
 
 function assignSlopeToGrid() {
     for (let index = 0; index < globalGrid.linearArray.length; index++) {
-        // console.log('globalGrid.linearArray', globalGrid.linearArray);
-
         let square = globalGrid.linearArray[index];
-        // console.log('square', square);
-
         square = findLowestSide(square);
     }
 }
@@ -279,8 +273,6 @@ export const getInitialGrid = (xSquares, ySquares) => {
     assignSlopeToGrid();
     // applyYearsRain(1);
     assignColors();
-
-    console.log('globalGrid.linearArray', globalGrid.linearArray);
 };
 
 function flowWater(square) {
@@ -290,8 +282,6 @@ function flowWater(square) {
     square.waterElevation = excessWater;
     findLowestSide(square);
     if(square.lowSide) {
-        console.log("flowing to low side VVVVVVVVV");
-
         let lower = square.lowSide;
         square.precipitation = 100;
         lower.precipitation += excessWater;
@@ -302,7 +292,6 @@ function flowWater(square) {
     } else if (square.levelSides && square.levelSides.length) {
         square.levelSides.forEach(side => {
             if(side.precipitation < square.precipitation) {
-                console.log("flowing to level side -----");
                 let diff = Math.floor((square.precipitation - side.precipitation) / 2);
                 diff = diff > excessWater ? excessWater : diff
 
@@ -361,8 +350,6 @@ function sendRainE(amount, takeWater) {
             const square = row[j];
             rainLeft = applyRain(square, rainLeft, takeWater);
         }
-        // console.log('rainLeft', rainLeft);
-        // console.log('Rain applied', amount - rainLeft);
     }
 }
 
@@ -440,7 +427,6 @@ export function setSeasons(moisture, temp) {
 }
 
 export function initNewWorld(xSquares, ySquares) {
-    // world.elevationChange = random(1, 20);
     world.globalMoisture = random(5, 20);
     world.globalTemp = random(-20,20) / 10; //-2.0 - 2.0
     world.seasons = setSeasons(world.globalMoisture, world.globalTemp);
@@ -472,7 +458,6 @@ export function initNewWorld(xSquares, ySquares) {
 }
 
 export function initMockWorld(mockGrid) {
-    // world.elevationChange = random(1, 20);
     world.globalMoisture = random(5, 20);
     world.globalTemp = random(-20, 20) / 10; //-2.0 - 2.0
     world.seasons = setSeasons(world.globalMoisture, world.globalTemp);

@@ -1,5 +1,5 @@
 import React from "react";
-import {getBaseStyle} from "../../../helpers/animal-helpers/style-generator";
+import {getBaseStyle} from "../../../../helpers/animal-helpers/style-generator";
 import {round} from "lodash";
 
 class Animal extends React.Component {

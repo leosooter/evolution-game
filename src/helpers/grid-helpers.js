@@ -1,8 +1,9 @@
-import {sample, shuffle, clamp} from "lodash";
+import {sample, shuffle, clamp, mean, sortBy, sortedIndexBy, round} from "lodash";
 import {getGridColor, colorTracker, randomColor} from "./color-helpers";
 import {worldColorsGrid} from "../config/colors-config";
 import {random} from "./utilities";
 import gridMocks from "../../mocks/grid-mocks";
+import {newPlant, loadPlantArray} from "./animal-helpers/base-animals";
 
 const directionArray = ["e", "s", "w", "n"];
 const squareSideArray = ["e", "s", "w", "n", "ne", "nw", "se", "sw"];
@@ -10,27 +11,37 @@ const world = {};
 const startingTemp = 100;
 const EVAPORATION_RATE = .2;
 
+let rejectedOnTemp = 0;
+let rejectedOnPrecip = 0;
+let rejectedOnDrought = 0;
+let removedPlants = 0;
 
 
 let globalGrid = [];
 let globalZoomArray = [];
+let plantArray = loadPlantArray(100);
+
+
 let rainLeft;
+let totalYears = 0;
 let totalSeasons = 0;
+let totalSummers = 0;
+let totalWinters = 0;
+
 let cornerRadius = 30;
 let baseTemp = 100;
+let seasonTemp = 100;
 let mapHeight;
 let mapWidth;
 let mapZoomHeight;
 let mapZoomWidth;
 let isZoomed = false;
 
-
-let wSlope = null;
-let nSlope = null;
-let slopeArray = [-1, 0, 1];
-let power;
-let changeChance;
-let lineArray = [];
+let avgSquarePrecip = 0;
+let avgSquareTemp = 0;
+let squareVsPlantTempDiff = 0;
+let squareVsPlantPrecipDiff = 0;
+let diffCount = 0;
 
 ////////////////////////////////////////////////// Grid Utilities
 function getRandomFromGrid() {
@@ -117,16 +128,25 @@ function scanGridByDirection(direction="e", callBack, outerCallBack) {
 
 ///////////////////////////// Grid creation
 
-export function newSquare(index, widthIndex, heightIndex, options={}) { // options param is used to generate set-value squares for mocks
+export function newSquare(index, widthIndex, heightIndex, gridHeight, options={}) { // options param is used to generate set-value squares for mocks
     const {setElevation, setTemp, setPrecip} = options;
 
     let square = {
         avgElevation: setElevation || null,
         waterElevation: 0,
         precipitation: setPrecip || 0,
+        totalPrecipArray: [0, 0, 0, 0],
+        avgPrecipArray: [0, 0, 0, 0],
+
         baseTemp: setTemp || 0,
+        totalTempArray: [0, 0, 0, 0],
+        avgTempArray: [0, 0, 0, 0],
+
+        plantNiches: [],
+        plantMinScore: 100,
+
         index,
-        latitude : null,
+        latitude: heightIndex / gridHeight,
         widthIndex,
         heightIndex,
         allSidesArray: [],
@@ -139,7 +159,9 @@ export function newSquare(index, widthIndex, heightIndex, options={}) { // optio
         nw: null,
         ne: null,
         sw: null,
-        se: null
+        se: null,
+
+        plants: []
     }
 
     return square;
@@ -151,18 +173,16 @@ function setRandomGlobalGrid(height, width) {
 
     for (let gridHeight = 0; gridHeight < height; gridHeight++) {
         const row = [];
+        let heightIndex = gridHeight || 0;
 
         for (let gridWidth = 0; gridWidth < width; gridWidth++) {
-            row.push(newSquare(index, gridWidth, gridHeight));
+            row.push(newSquare(index, gridWidth, heightIndex, height));
             index ++;
         }
 
         globalGrid.push(row);
     }
     let t1 = performance.now();
-
-    console.log('setRandomGlobalGrid time', t1 - t0);
-
 }
 
 /////////////////////////////////////////////////// Elevation and Temp
@@ -197,140 +217,6 @@ function assignElevationFromSquare(current, variance) {
     }
 }
 
-function assignElevationFromPointsOnGrid(times, variance, depth = 1000) {
-
-}
-
-function assignElevationFromTwoPoints(square) {
-    if (square.n && square.n.avgElevation >= 100) {
-        nSlope = -1;
-    } else if (square.n && square.n.avgElevation <= -20) {
-        nSlope = 1;
-    } else if (random(0, changeChance) === 0) {
-        nSlope = sample(slopeArray);
-    }
-
-    let nElevation = square.n && square.n.avgElevation + (random(0, power) * nSlope);
-
-    if (square.w && square.w.avgElevation >= 100) {
-        wSlope = -1;
-    } else if (square.w && square.w.avgElevation <= -20) {
-        wSlope = 1;
-    } else if (random(0, changeChance) === 0) {
-        wSlope = sample(slopeArray);
-    }
-
-    let wElevation = square.w && square.w.avgElevation + (random(0, power) * wSlope);
-    let avg = Math.round((wElevation + nElevation) / 2);
-
-    square.avgElevation = clamp(avg, -20, 100);
-
-    return; ///////////////////////////////////////////////////////////////
-
-
-
-
-
-
-
-
-
-
-
-
-
-    if (random(0, changeChance) === 0) {
-        wSlope = sample(slopeArray);
-    }
-    if (random(0, changeChance) === 0) {
-        nSlope = sample(slopeArray);
-    }
-
-    let avgElevation = square.n.avgElevation;
-
-    if(square.w) {
-        avgElevation = Math.floor((avgElevation + square.w.avgElevation) / 2);
-        console.log('square.w.avgElevation', square.w.avgElevation, "wSlope", wSlope);
-    }
-
-
-
-    let wChange = (square.w && square.w.avgElevation + (random(0, power) * wSlope) || 0);
-    // let wChange = 0;
-    let nChange = square.n && square.n.avgElevation + (random(0, power) * nSlope);
-
-    let totalChange = Math.floor((wChange + nChange) / 2);
-    console.log('wChange', wChange);
-    console.log('nChange', nChange);
-
-
-    console.log('totalChange', totalChange);
-
-
-    square.avgElevation = avgElevation + totalChange;
-}
-
-function assignInitialLine(square) {
-
-    if(square.w && square.w.avgElevation >= 100) {
-        wSlope = -1;
-    } else if (square.w && square.w.avgElevation <= -20) {
-        wSlope = 1;
-    } else if(random(0, changeChance) === 0) {
-        wSlope = sample(slopeArray);
-    }
-
-    square.avgElevation = square.w && square.w.avgElevation + (random(0, power) * wSlope);
-}
-
-function assignElevation(square) {
-    console.log('square, power, changeChance', square, power, changeChance);
-
-    if(square.n) {
-        assignElevationFromTwoPoints(square);
-        return;
-    }
-
-    assignInitialLine(square);
-}
-
-function assignFromLeft(p = 15, c = 3) {
-    console.log('assignFromLeft(p, c)', p, c);
-
-    power = p;
-    changeChance = c;
-    wSlope = sample(slopeArray);
-    let startingElevation = random(-10, 90);
-    let start = globalGrid[0][0];
-    start.avgElevation = startingElevation;
-    loopGrid(assignElevation);
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 function fillMissedElevation(square) {
     shuffle(directionArray).forEach(side => {
         if (square[side] && square[side].avgElevation) {
@@ -340,14 +226,39 @@ function fillMissedElevation(square) {
     });
 }
 
-function assignTempToSquare(square) {
-    let heightIndex = square.heightIndex > 0 ? square.heightIndex : 1;
-    let elevation = square.avgElevation > 0 ? square.avgElevation : 1;
+function assignTempStatsToSquare(square) {
+    let seasonIndex = world.currentSeason.index;
+    // let heightIndex = square.heightIndex > 0 ? square.heightIndex : 1;
 
-    let latitudeAdjust = (heightIndex / mapHeight);
-    let elevationAdjust = ((100 - elevation) / 100);
-    square.baseTemp = Math.floor((baseTemp * latitudeAdjust ) * elevationAdjust);
+    square.totalTempArray[seasonIndex] += square.baseTemp;
+    square.avgTempArray[seasonIndex] = round(square.totalTempArray[seasonIndex] / totalYears || 0, 2);
+
+    square.avgTemp = round(mean(square.avgTempArray), 2);
+    avgSquareTemp += square.avgTemp;
+    square.avgHighTemp = Math.max(...square.avgTempArray);
+    square.avgMinTemp = Math.min(...square.avgTempArray);
+    square.avgTempDiff = square.avgHighTemp - square.avgMinTemp;
+}
+
+function assignTempToSquare(square) {
+    /*
+    Start with north% and north adjust. North adjust is subtracted from base temp, but the various seasons add
+    portions of north adjust back. In winter, full north adjust is in effect. In summer, most of the adjust is removed.
+
+    Elevation remains constant adjust and only varies by north adjust with season.
+    */
+
+    let latitudeAdjust = 1 - square.latitude;
+    let precipAdjust = (square.precipitation * .5) || 0;
+    let adjustedTemp = Math.round(baseTemp - ((seasonTemp * latitudeAdjust) - precipAdjust));
+
+    let elevation = square.avgElevation > 0 ? square.avgElevation : 1;
+    let elevationAdjust = elevation;
+
+    square.baseTemp = Math.round(adjustedTemp - elevationAdjust);
     square.baseTemp = clamp(square.baseTemp, 0, 120);
+
+    assignTempStatsToSquare(square)
 }
 
 function assignTempAndFillMissedElevationToSquare(square) {
@@ -487,6 +398,36 @@ function findLowestSide(square) {
 
 
 //////////////////////////////////// Precipitation
+function findDroughts(square) {
+    let droughts = 0;
+    let maxDroughtLength = 0;
+    let droughtStretch = 0;
+
+    square.avgPrecipArray.forEach(precip => {
+        if(precip <= 1) {
+            droughts ++;
+            droughtStretch ++;
+            if (droughtStretch > maxDroughtLength) {
+                maxDroughtLength = droughtStretch;
+            } else {
+                droughtStretch = 0;
+            }
+        }
+    })
+
+    square.droughts = droughts;
+    square.maxDroughtLength = maxDroughtLength;
+}
+
+function applyPrecipStatsToSquare(square) {
+    let seasonIndex = world.currentSeason.index;
+
+    square.totalPrecipArray[seasonIndex] += square.precipitation;
+    const precipAvg = round(square.totalPrecipArray[seasonIndex] / totalYears, 2);
+    square.avgPrecipArray[seasonIndex] = precipAvg === Infinity ? 0 : precipAvg;
+    square.avgPrecip = round(mean(square.avgPrecipArray), 2);
+    findDroughts(square);
+}
 
 function applyRain(square) {
     const elevationBonus = Math.floor(square.avgElevation / 4);
@@ -498,11 +439,14 @@ function applyRain(square) {
         square.precipitation += rainAmount;
         rainLeft -= rainAmount;
         assignGridColorToSquare(square);
+        applyPrecipStatsToSquare(square);
 
     } else if (square.avgElevation <= world.waterLevel) {
         rainLeft += random(.05, .1);
     }
 }
+
+
 
 function applyEvaporation(square) {
     if (square.avgElevation > world.waterLevel && square.precipitation) {
@@ -520,7 +464,6 @@ export function applyRainAndEvaporation(square) {
 
 
 export function applySeasonsRain(evaporate) {
-    console.log('applySeasonsRain');
 
     let rainType = applyRainAndEvaporation;
     if(!evaporate) {
@@ -536,15 +479,12 @@ export function applySeasonsRain(evaporate) {
 }
 
 export function applyYearsRain(times = 1, evaporate) {
-    console.log('Applying years rain', times);
 
     for (let i = 0; i < times; i++) {
         for (let j = 0; j < 4; j++) {
             applySeasonsRain(evaporate);
         }
     }
-    console.log('Done with years rain');
-
 
     return getReturnState();
 }
@@ -564,6 +504,164 @@ export function decreaseMoisture(amount = 1) {
     return getReturnState();
 }
 
+//////////////////////////////////// Biosphere
+function getArrayScore(target, profile, tolerance) {
+    let score = 0;
+
+    for (let index = 0; index < target.length; index++) {
+        const targetValue = target[index];
+        const profileValue = profile[index];
+        let diff = Math.abs(targetValue - profileValue);
+        score += diff;
+    }
+
+    return Math.floor(score);
+}
+
+function competePlantAgainstSquare(square, plant) {
+    if(Array.isArray(square.plants)) {
+        const position = sortedIndexBy(square.plants, plant, 'solarRatio');
+        square.plants.splice(position, 0, plant)
+        const removedPlant = square.plants.shift();
+        removedPlants++;
+        //sortedIndexBy(objects, { 'x': 4 }, 'x')
+    }
+}
+
+function testPlantAgainstSquare(square, plant) {
+    /*
+    Plant survival logic:
+    If square precip and temp stats are outside range- do not add
+    If square conditions are in range add and calculate survival score
+
+    Factors:
+    Plants are not limited by maxTemp or maxPrecip. They have a minTemp and minPrecip
+    Because minTemp and minPrecip both limit solarGain and solarEfficiency, plants with
+    lower minTemp or minPrecip will be out-competed in more ideal environments
+
+    minTemp(-10 - 70): determined by foliageStrength
+
+    minPrecip(1 - 70): determined by root-spread
+
+    maxDroughtLength(0 - 3): determined by rootDepth and rootRatio
+    */
+    const {avgTemp, avgHighTemp, avgMinTemp, avgTempDiff, avgPrecip, maxDroughtLength} = square;
+    const {minTemp, minPrecip, droughtTolerance, foliageStrength, solarRatio} = plant;
+
+    if (avgMinTemp < minTemp) {
+        // if(plant.id === 1000) {
+        //     console.log('^^^ rejecting TEST_PLANT on temp avgMinTemp < minTemp', avgMinTemp, minTemp);
+        // }
+        // console.log('Rejecting plant on temp (plant / square)', minTemp, avgMinTemp);
+        rejectedOnTemp ++;
+        return;
+    }
+
+    if (avgPrecip < minPrecip) {
+        // if (plant.id === 1000) {
+        //     console.log('^^^ rejecting TEST_PLANT on precip avgPrecip < minPrecip', avgPrecip, minPrecip);
+        // }
+        rejectedOnPrecip ++;
+        // console.log('Rejecting plant on precip (plant / square)', minPrecip, avgMinPrecip);
+        return;
+    }
+
+    if (maxDroughtLength > droughtTolerance) {
+        // if (plant.id === 1000) {
+        //     console.log('^^^ rejecting TEST_PLANT on drought maxDroughtLength > droughtTolerance', maxDroughtLength, droughtTolerance);
+        // }
+        rejectedOnDrought ++;
+        // console.log('Rejecting plant on drought (plant / square)', droughtTolerance, maxDroughtLength);
+        return;
+    }
+
+    if (square.plants.length < 9) {
+        square.plants.push(plant);
+    } else if (square.plants.length === 9) {
+        square.plants.push(plant);
+        square.plants = sortBy(square.plants, ['solarRatio']);
+    } else if(plant.solarRatio > square.plants[0].solarRatio) {
+        competePlantAgainstSquare(square, plant);
+    } else {
+        // if (plant.id === 1000) {
+        //     console.log('^^^ rejecting TEST_PLANT on score plant.solarRatio > square.plants[0].solarRatio', plant.solarRatio, square.plants[0].solarRatio);
+        // }
+    }
+}
+
+function assignPlantsToSquare(square) {
+    if (square.avgElevation <= world.waterLevel) {
+        return;
+    }
+
+    const {avgPrecipArray, avgTempArray} = square;
+    const squarePrecipMean = avgPrecipArray.length && mean(avgPrecipArray) || 0;
+    // console.log('squarePrecipMean', squarePrecipMean);
+    if (squarePrecipMean === Infinity) {
+        console.log('Infinity Array', avgPrecipArray);
+    }
+
+    const squareTempMean = mean(avgTempArray);
+
+    for (let index = 0; index < plantArray.length; index++) {
+        const plant = plantArray[index];
+        squareVsPlantPrecipDiff += (squarePrecipMean - mean(plant.precipProfile)) || 0;
+        squareVsPlantTempDiff += (squareTempMean - mean(plant.tempProfile)) || 0;
+        diffCount++;
+
+        // const precipScore = getArrayScore(avgPrecipArray, plant.precipProfile, plant.precipTolerance);
+        // if (precipScore > plant.precipTolerance) {
+        //     return;
+        // }
+
+        // const tempScore = getArrayScore(avgTempArray, plant.tempProfile, plant.tempTolerance);
+        // if (tempScore > plant.tempTolerance) {
+        //     return;
+        // }
+
+        testPlantAgainstSquare(square, plant);
+
+        // square.plants.push(newPlant(plant, precipScore, tempScore));
+    }
+
+    // plantArray.forEach(plant => {
+    //     squareVsPlantPrecipDiff += (squarePrecipMean - mean(plant.precipProfile)) || 0;
+    //     squareVsPlantTempDiff += (squareTempMean - mean(plant.tempProfile)) || 0;
+    //     diffCount ++;
+
+    //     const precipScore = getArrayScore(avgPrecipArray, plant.precipProfile, plant.precipTolerance);
+    //     if (precipScore > plant.precipTolerance) {
+    //         return;
+    //     }
+
+    //     const tempScore = getArrayScore(avgTempArray, plant.tempProfile, plant.tempTolerance);
+    //     if(tempScore > plant.tempTolerance) {
+    //         return;
+    //     }
+
+    //     square.plants.push(newPlant(plant, precipScore, tempScore));
+    // });
+}
+
+function assignOrganismsToSquare(square) {
+    assignPlantsToSquare(square);
+}
+
+function assignOrganismsToGrid() {
+    loopGrid(assignOrganismsToSquare);
+
+    console.log('squareVsPlantTempDiff', (squareVsPlantTempDiff / diffCount));
+    console.log('squareVsPlantPrecipDiff', (squareVsPlantPrecipDiff / diffCount));
+    console.log('Total', diffCount);
+
+    console.log('rejectedOnTemp', rejectedOnTemp);
+    console.log('rejectedOnPrecip', rejectedOnPrecip);
+    console.log('rejectedOnDrought', rejectedOnDrought);
+
+    console.log('removedPlants', removedPlants);
+}
+
+
 //////////////////////////////////// Initialize
 
 function assignTempAndColor() {
@@ -577,6 +675,13 @@ function assignTempAndColor() {
 
 
 /////////////////////////////////// World Params
+// const worldZones = {
+//     temparateNorth: {
+//         baseTemp: startingTemp,
+//         nAdjust:
+//     }
+// };
+
 export function setSeasons(moisture, temp) {
     const winterColor = "rgb(165, 220, 255)";
     const springColor = "rgb(165, 255, 135)";
@@ -585,7 +690,7 @@ export function setSeasons(moisture, temp) {
 
     const winterSeason = {
         name: "Winter",
-        avgTemp: .5,
+        avgTemp: 1,
         windDirection: sample(directionArray),
         rainAmount: random(10, 20) + moisture,
         backgroundColor: winterColor,
@@ -594,27 +699,27 @@ export function setSeasons(moisture, temp) {
 
     const springSeason = {
         name: "Spring",
-        avgTemp: 1.3,
+        avgTemp: .6,
         windDirection: sample(directionArray),
-        rainAmount: random(0, 20) + moisture,
+        rainAmount: random(0, 10) + moisture,
         backgroundColor: springColor,
         index: 1
     }
 
     const summerSeason = {
         name: "Summer",
-        avgTemp: 2,
+        avgTemp: .2,
         windDirection: sample(directionArray),
-        rainAmount: random(0, 10) + moisture,
+        rainAmount: random(0, 5) + moisture,
         backgroundColor: summerColor,
         index: 2
     }
 
     const fallSeason = {
         name: "Fall",
-        avgTemp: .8,
+        avgTemp: .7,
         windDirection: sample(directionArray),
-        rainAmount: random(10, 30) + moisture,
+        rainAmount: random(5, 15) + moisture,
         backgroundColor: fallColor,
         index: 3
     }
@@ -632,10 +737,15 @@ export function advanceSeason() {
     }
 
     const tempModifier = world.currentSeason.avgTemp + random(-0.2, 0.2);
-    baseTemp = Math.ceil((startingTemp * world.globalTemp) * tempModifier);
-    assignTempAndColor();
 
-    totalSeasons ++;
+    seasonTemp = Math.ceil(baseTemp * tempModifier);
+
+    totalSeasons++;
+    if (totalSeasons % 4 === 0) {
+        totalYears++;
+    }
+
+    assignTempAndColor();
 
     return getReturnState();
 }
@@ -650,7 +760,7 @@ export function initNewWorldParams(zoomLevel, waterLevel) {
     world.waterLevel = waterLevel;
 
     const tempModifier = world.currentSeason.avgTemp + random(-0.2, 0.2);
-    baseTemp = Math.ceil((startingTemp * world.globalTemp) * tempModifier);
+    seasonTemp = Math.ceil(baseTemp * tempModifier);
 }
 
 
@@ -660,7 +770,7 @@ function getReturnState() {
         world: {
             ...world,
             seasons: setSeasons(),
-            avgTemp: baseTemp,
+            avgTemp: seasonTemp,
         },
         totalSeasons,
         worldColorsGrid,
@@ -701,17 +811,7 @@ export function initNewWorld(worldOptions) {
 
     applyYearsRain(40, false);
 
-    // // //If a mock grid was not passed, or the mock grid does not set elevation, randomly generate elevation
-    // if (!randomSquare.avgElevation) {
-    //     assignElevationFromSquare(randomSquare, 2);
-    // }
-
-    // // If a mock grid was not passed, or the mock grid does not set temp, assign temp and color
-    // if (!randomSquare.baseTemp) {
-    //     assignTempAndColor();
-    // } else {
-    //     assignGridColorsToGrid(); // If grid with pre-set temp was passed - only assign color
-    // }
+    assignOrganismsToGrid();
 
     let t2 = performance.now();
 
@@ -721,20 +821,7 @@ export function initNewWorld(worldOptions) {
 }
 
 
-/////////////////////////////////////////////// Terra Form
-// export function moveTime(params) {
-//     const {years, moisture} = params;
-//     console.log('moisture', moisture);
-
-
-//     for (let year = 0; year < years; year++) {
-//         world.waterLevel += 10;
-
-//         applyYearsRain(1, false);
-//     }
-
-//     return getReturnState();
-// }
+/////////////////////////////////////////////// Terraform
 
 export function moveTime(params) {
     let {years, moisture} = params;
@@ -742,14 +829,10 @@ export function moveTime(params) {
     let waterIncrease = Number(moisture) * yearsIncrease;
     increaseMoisture(waterIncrease);
 
-    // applyYearsRain(yearsIncrease, false);
-
     return getReturnState();
 }
 
 function newZoomSquare(square) {
-    console.log('newZoomSquare');
-
     return square;
 }
 
@@ -762,7 +845,6 @@ export function toggleZoom(square, zoomHeight = 9, zoomWidth = 15) {
         return getReturnState();
     }
 
-    console.log('grid helper zooming', square);
     mapZoomHeight = zoomHeight;
     mapZoomWidth = zoomWidth;
 
@@ -771,10 +853,6 @@ export function toggleZoom(square, zoomHeight = 9, zoomWidth = 15) {
     let widthIndex = clamp(square.widthIndex - Math.floor(zoomWidth / 2), 0, mapWidth);
     let heightLength = heightIndex + zoomHeight;
     let widthLength = widthIndex + zoomWidth;
-
-    console.log('heightIndex', heightIndex);
-    console.log('widthIndex', widthIndex);
-
     let outerCount = 0;
     let innerCount = 0;
 
@@ -788,8 +866,6 @@ export function toggleZoom(square, zoomHeight = 9, zoomWidth = 15) {
 
         globalZoomArray.push(row);
     }
-
-    console.log('After zoom loop', globalZoomArray, outerCount, innerCount);
 
     return getReturnState();
 }

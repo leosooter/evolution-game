@@ -2,12 +2,9 @@ import {connect} from "react-redux";
 import MapView from "./index";
 
 function mapStateToProps(state, ownProps) {
-    console.log('Map, mapState', state);
-
     return {
-        view: ownProps.viewType,
-        grid: state.grid,
-        totalSeasons: state.totalSeasons
+        ...state,
+        ...ownProps
     }
 }
 

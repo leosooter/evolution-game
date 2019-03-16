@@ -19,9 +19,6 @@ function generateEnvironment() {
         swatches.push(sample(colors))
     }
 
-    console.log('colors', colors);
-    console.log('swatches', swatches);
-
     return {
         colors,
         swatches

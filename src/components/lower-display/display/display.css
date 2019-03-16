@@ -1,4 +1,5 @@
 .displayWrapper {
+    display: inline-block;
     margin-bottom: 20px;
     width: 400px;
 }

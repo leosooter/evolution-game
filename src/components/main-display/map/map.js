@@ -1,5 +1,6 @@
 import React, {Component} from "react";
 import "./map.css";
+import LowerDisplay from "../../lower-display/lower-display";
 const viewTypes = {
     elevation: "elevationStyle",
     rainfall: "rainfallStyle",
@@ -65,9 +66,6 @@ class Map extends Component {
     }
 
     render() {
-        console.log('Map render', this.props.totalSeasons);
-
-
         return (
             <div className="gridWrapper" key={this.props.totalSeasons}>
                 <div className="gridBackground">

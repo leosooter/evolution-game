@@ -5,16 +5,14 @@ import {initNewWorld, applyYearsRain, applySeasonsRain, advanceSeason, increaseM
 const worldOptions = {
     height: 80,
     width: 180,
-    // height: 40,
-    // width: 40,
+    // height: 10,
+    // width: 10,
     zoomLevel: 2,
     waterLevel: 0
 }
 const defaultState = initNewWorld(worldOptions);
 
 function reducer(state, action) {
-    console.log('Reducer action', action);
-
     switch (action.type) {
         case APPLY_INITIAL_RAIN:
 
@@ -77,8 +75,6 @@ function reducer(state, action) {
         break;
 
         case TOGGLE_ZOOM:
-            console.log('index zooming ---');
-
             return {
                 ...toggleZoom(state.selectedSquare)
             }

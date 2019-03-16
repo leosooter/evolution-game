@@ -65,21 +65,15 @@ export function canSurvive (base) {
         let measure = rule.measure(base.size, base.traits);
 
         if (rule.name === "leg support to weight") {
-            console.log('measeure', measure);
-            console.log('legStrength', base.traits.legStrength, 'weight', base.traits.weight);
 
 
         }
 
         if(rule.min && measure < rule.min) {
-            console.log(`Animal failed min ${rule.name}`);
-            console.log(`Measure = ${measure} || Min = ${rule.min}`);
 
             return false;
         }
         if(rule.max && measure > rule.max) {
-            console.log(`Animal failed max ${rule.name}`);
-            console.log(`Measure = ${measure} || Max = ${rule.max}`);
 
             return false
         }

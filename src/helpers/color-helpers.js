@@ -79,20 +79,16 @@ function getWaterColor(baseTemp, avgElevation) {
 }
 
 function getRiverColor(temp) {
-    console.log('river temp', temp, "riverArray.length", riverArray.length);
     const arrayAdjust = 100 / riverArray.length;
 
     let tempIndex = clamp(Math.round((temp + 1) / arrayAdjust), 0, riverArray.length - 1);
-    console.log('river tempIndex', tempIndex);
     return riverArray[tempIndex];
 }
 
 function getFallColor(temp) {
-    console.log('fall temp', temp, "fallArray.length", fallArray.length);
     const arrayAdjust = 100 / fallArray.length;
 
     let tempIndex = clamp(Math.round((temp + 1) / arrayAdjust), 0, fallArray.length - 1);
-    console.log('fall tempIndex', tempIndex);
 
     return fallArray[tempIndex];
 }
@@ -149,7 +145,6 @@ export function getGridColor(square, waterLevel = 0, season) {
 
     let precip = Math.floor((precipitation + 1) / gridAdjust);
     precip = precip > maxIndex ? maxIndex : precip;
-    // console.log('Precip', precip);
     if (!colorTracker.precip[precip]) {
         colorTracker.precip[precip] = 1;
     } else {
@@ -158,7 +153,6 @@ export function getGridColor(square, waterLevel = 0, season) {
 
     let temp = Math.floor((baseTemp + 1) / gridAdjust);
     temp = temp > maxIndex ? maxIndex : temp;
-    // console.log('Temp', temp);
 
     if (!colorTracker.temp[temp]) {
         colorTracker.temp[temp] = 1;
@@ -166,12 +160,8 @@ export function getGridColor(square, waterLevel = 0, season) {
         colorTracker.temp[temp]++;
     }
 
-
     let colorSquare = worldColorsGrid[precip][temp] || blankColor;
 
-
-
-    // console.log('colorSquare', colorSquare);
     const {r,g,b} = colorSquare;
     return morphColor({r,g,b}, 5);
 }

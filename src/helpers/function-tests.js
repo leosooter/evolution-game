@@ -45,8 +45,6 @@ function setRandomGlobalGrid(height, width) {
         globalGrid.push(row);
     }
     let t1 = performance.now();
-
-    console.log('setRandomGlobalGrid time', t1 - t0);
 }
 const testResults = {
     basic: 0,
@@ -63,7 +61,6 @@ function busyWork(square) {
             square[key] = "test";
         }
     }
-    console.log('Done');
 }
 
 function basicForLoop() {

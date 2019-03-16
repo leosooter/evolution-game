@@ -66,9 +66,6 @@ class ZoomMap extends Component {
     }
 
     render() {
-        console.log('ZoomMap render', this.props.totalSeasons);
-
-
         return (
             <div className="gridWrapper" key={this.props.totalSeasons}>
                 <div className="gridBackground">

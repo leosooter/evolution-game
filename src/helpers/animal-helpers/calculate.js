@@ -100,7 +100,6 @@ function getAcceleration(weight, legLength, legWidth, bodyLength, bodyHeight) {
     // ideal mass
     // ideal leg width
     // ideal leg length
-    // console.log('------Acceleration-----');
     const IDEAL_MASS = 60;
     const IDEAL_LEG_LEN = 1;
     const IDEAL_LEG_WIDTH = .3;
