@@ -3,7 +3,7 @@ import {getGridColor, colorTracker, randomColor} from "./color-helpers";
 import {worldColorsGrid} from "../config/colors-config";
 import {random} from "./utilities";
 import gridMocks from "../../mocks/grid-mocks";
-import {newPlant, loadPlantArray} from "./animal-helpers/base-animals";
+import {loadPlantArray} from "./animal-helpers/base-animals";
 
 const directionArray = ["e", "s", "w", "n"];
 const squareSideArray = ["e", "s", "w", "n", "ne", "nw", "se", "sw"];
@@ -19,14 +19,12 @@ let removedPlants = 0;
 
 let globalGrid = [];
 let globalZoomArray = [];
-let plantArray = loadPlantArray(100);
+let plantArray = loadPlantArray(50);
 
 
 let rainLeft;
-let totalYears = 0;
+let totalYears = 1;
 let totalSeasons = 0;
-let totalSummers = 0;
-let totalWinters = 0;
 
 let cornerRadius = 30;
 let baseTemp = 100;
@@ -36,12 +34,6 @@ let mapWidth;
 let mapZoomHeight;
 let mapZoomWidth;
 let isZoomed = false;
-
-let avgSquarePrecip = 0;
-let avgSquareTemp = 0;
-let squareVsPlantTempDiff = 0;
-let squareVsPlantPrecipDiff = 0;
-let diffCount = 0;
 
 ////////////////////////////////////////////////// Grid Utilities
 function getRandomFromGrid() {
@@ -142,9 +134,6 @@ export function newSquare(index, widthIndex, heightIndex, gridHeight, options={}
         totalTempArray: [0, 0, 0, 0],
         avgTempArray: [0, 0, 0, 0],
 
-        plantNiches: [],
-        plantMinScore: 100,
-
         index,
         latitude: heightIndex / gridHeight,
         widthIndex,
@@ -234,7 +223,6 @@ function assignTempStatsToSquare(square) {
     square.avgTempArray[seasonIndex] = round(square.totalTempArray[seasonIndex] / totalYears || 0, 2);
 
     square.avgTemp = round(mean(square.avgTempArray), 2);
-    avgSquareTemp += square.avgTemp;
     square.avgHighTemp = Math.max(...square.avgTempArray);
     square.avgMinTemp = Math.min(...square.avgTempArray);
     square.avgTempDiff = square.avgHighTemp - square.avgMinTemp;
@@ -424,8 +412,12 @@ function applyPrecipStatsToSquare(square) {
 
     square.totalPrecipArray[seasonIndex] += square.precipitation;
     const precipAvg = round(square.totalPrecipArray[seasonIndex] / totalYears, 2);
+    if (Number.isNaN(precipAvg)) {
+        console.log('NAN precipAvg **', square.totalPrecipArray[seasonIndex], totalYears, square.totalPrecipArray[seasonIndex] / totalYears);
+    }
     square.avgPrecipArray[seasonIndex] = precipAvg === Infinity ? 0 : precipAvg;
     square.avgPrecip = round(mean(square.avgPrecipArray), 2);
+
     findDroughts(square);
 }
 
@@ -438,7 +430,6 @@ function applyRain(square) {
     if (rainLeft > 0 && square.avgElevation > world.waterLevel && rainChance > 85) {
         square.precipitation += rainAmount;
         rainLeft -= rainAmount;
-        assignGridColorToSquare(square);
         applyPrecipStatsToSquare(square);
 
     } else if (square.avgElevation <= world.waterLevel) {
@@ -452,7 +443,6 @@ function applyEvaporation(square) {
     if (square.avgElevation > world.waterLevel && square.precipitation) {
         square.precipitation -= EVAPORATION_RATE;
         square.precipitation = clamp(square.precipitation, 0, 150);
-        assignGridColorToSquare(square);
     }
 }
 
@@ -463,7 +453,7 @@ export function applyRainAndEvaporation(square) {
 
 
 
-export function applySeasonsRain(evaporate) {
+export function applySeasonsRain(evaporate, color) {
 
     let rainType = applyRainAndEvaporation;
     if(!evaporate) {
@@ -473,16 +463,17 @@ export function applySeasonsRain(evaporate) {
     scanGridByDirection(world.currentSeason.windDirection, rainType, () => {
         rainLeft = world.currentSeason.rainAmount
     });
-    advanceSeason();
+
+    advanceSeason(color);
 
     return getReturnState();
 }
 
-export function applyYearsRain(times = 1, evaporate) {
+export function applyYearsRain(times = 1, evaporate, color = true) {
 
     for (let i = 0; i < times; i++) {
         for (let j = 0; j < 4; j++) {
-            applySeasonsRain(evaporate);
+            applySeasonsRain(evaporate, (color && i === times - 1 && j === 3));
         }
     }
 
@@ -492,6 +483,8 @@ export function applyYearsRain(times = 1, evaporate) {
 //////////////////////////////////// Global Moisture
 export function increaseMoisture(amount = 1) {
     world.waterLevel += amount;
+    console.log('increaseMoisture -- assignGridColorsToGrid');
+
     assignGridColorsToGrid();
 
     return getReturnState();
@@ -499,24 +492,13 @@ export function increaseMoisture(amount = 1) {
 
 export function decreaseMoisture(amount = 1) {
     world.waterLevel -= amount;
+    console.log('decreaseMoisture -- assignGridColorsToGrid');
     assignGridColorsToGrid();
 
     return getReturnState();
 }
 
 //////////////////////////////////// Biosphere
-function getArrayScore(target, profile, tolerance) {
-    let score = 0;
-
-    for (let index = 0; index < target.length; index++) {
-        const targetValue = target[index];
-        const profileValue = profile[index];
-        let diff = Math.abs(targetValue - profileValue);
-        score += diff;
-    }
-
-    return Math.floor(score);
-}
 
 function competePlantAgainstSquare(square, plant) {
     if(Array.isArray(square.plants)) {
@@ -524,7 +506,6 @@ function competePlantAgainstSquare(square, plant) {
         square.plants.splice(position, 0, plant)
         const removedPlant = square.plants.shift();
         removedPlants++;
-        //sortedIndexBy(objects, { 'x': 4 }, 'x')
     }
 }
 
@@ -545,8 +526,8 @@ function testPlantAgainstSquare(square, plant) {
 
     maxDroughtLength(0 - 3): determined by rootDepth and rootRatio
     */
-    const {avgTemp, avgHighTemp, avgMinTemp, avgTempDiff, avgPrecip, maxDroughtLength} = square;
-    const {minTemp, minPrecip, droughtTolerance, foliageStrength, solarRatio} = plant;
+    const {avgMinTemp, avgPrecip, maxDroughtLength} = square;
+    const {minTemp, minPrecip, droughtTolerance} = plant;
 
     if (avgMinTemp < minTemp) {
         // if(plant.id === 1000) {
@@ -582,10 +563,6 @@ function testPlantAgainstSquare(square, plant) {
         square.plants = sortBy(square.plants, ['solarRatio']);
     } else if(plant.solarRatio > square.plants[0].solarRatio) {
         competePlantAgainstSquare(square, plant);
-    } else {
-        // if (plant.id === 1000) {
-        //     console.log('^^^ rejecting TEST_PLANT on score plant.solarRatio > square.plants[0].solarRatio', plant.solarRatio, square.plants[0].solarRatio);
-        // }
     }
 }
 
@@ -594,66 +571,19 @@ function assignPlantsToSquare(square) {
         return;
     }
 
-    const {avgPrecipArray, avgTempArray} = square;
-    const squarePrecipMean = avgPrecipArray.length && mean(avgPrecipArray) || 0;
-    // console.log('squarePrecipMean', squarePrecipMean);
-    if (squarePrecipMean === Infinity) {
-        console.log('Infinity Array', avgPrecipArray);
-    }
-
-    const squareTempMean = mean(avgTempArray);
-
     for (let index = 0; index < plantArray.length; index++) {
         const plant = plantArray[index];
-        squareVsPlantPrecipDiff += (squarePrecipMean - mean(plant.precipProfile)) || 0;
-        squareVsPlantTempDiff += (squareTempMean - mean(plant.tempProfile)) || 0;
-        diffCount++;
-
-        // const precipScore = getArrayScore(avgPrecipArray, plant.precipProfile, plant.precipTolerance);
-        // if (precipScore > plant.precipTolerance) {
-        //     return;
-        // }
-
-        // const tempScore = getArrayScore(avgTempArray, plant.tempProfile, plant.tempTolerance);
-        // if (tempScore > plant.tempTolerance) {
-        //     return;
-        // }
-
         testPlantAgainstSquare(square, plant);
-
-        // square.plants.push(newPlant(plant, precipScore, tempScore));
     }
-
-    // plantArray.forEach(plant => {
-    //     squareVsPlantPrecipDiff += (squarePrecipMean - mean(plant.precipProfile)) || 0;
-    //     squareVsPlantTempDiff += (squareTempMean - mean(plant.tempProfile)) || 0;
-    //     diffCount ++;
-
-    //     const precipScore = getArrayScore(avgPrecipArray, plant.precipProfile, plant.precipTolerance);
-    //     if (precipScore > plant.precipTolerance) {
-    //         return;
-    //     }
-
-    //     const tempScore = getArrayScore(avgTempArray, plant.tempProfile, plant.tempTolerance);
-    //     if(tempScore > plant.tempTolerance) {
-    //         return;
-    //     }
-
-    //     square.plants.push(newPlant(plant, precipScore, tempScore));
-    // });
 }
 
 function assignOrganismsToSquare(square) {
     assignPlantsToSquare(square);
+    assignGridColorToSquare(square);
 }
 
 function assignOrganismsToGrid() {
     loopGrid(assignOrganismsToSquare);
-
-    console.log('squareVsPlantTempDiff', (squareVsPlantTempDiff / diffCount));
-    console.log('squareVsPlantPrecipDiff', (squareVsPlantPrecipDiff / diffCount));
-    console.log('Total', diffCount);
-
     console.log('rejectedOnTemp', rejectedOnTemp);
     console.log('rejectedOnPrecip', rejectedOnPrecip);
     console.log('rejectedOnDrought', rejectedOnDrought);
@@ -673,15 +603,16 @@ function assignTempAndColor() {
     );
 }
 
+function assignTemp() {
+    loopGrid(
+        (square) => {
+            assignTempAndFillMissedElevationToSquare(square);
+        }
+    );
+}
+
 
 /////////////////////////////////// World Params
-// const worldZones = {
-//     temparateNorth: {
-//         baseTemp: startingTemp,
-//         nAdjust:
-//     }
-// };
-
 export function setSeasons(moisture, temp) {
     const winterColor = "rgb(165, 220, 255)";
     const springColor = "rgb(165, 255, 135)";
@@ -727,7 +658,7 @@ export function setSeasons(moisture, temp) {
     return [winterSeason, springSeason, summerSeason, fallSeason];
 }
 
-export function advanceSeason() {
+export function advanceSeason(color = false) {
 
     let currentIndex = world.currentSeason.index;
     if(currentIndex === 3) {
@@ -745,7 +676,11 @@ export function advanceSeason() {
         totalYears++;
     }
 
-    assignTempAndColor();
+    if(color) {
+        assignTempAndColor();
+    } else {
+        assignTemp();
+    }
 
     return getReturnState();
 }
@@ -809,7 +744,7 @@ export function initNewWorld(worldOptions) {
     let randomSquare = getRandomFromGrid();
     assignElevationFromSquare(randomSquare, 2);
 
-    applyYearsRain(40, false);
+    applyYearsRain(40, false, false);
 
     assignOrganismsToGrid();
 
@@ -853,8 +788,6 @@ export function toggleZoom(square, zoomHeight = 9, zoomWidth = 15) {
     let widthIndex = clamp(square.widthIndex - Math.floor(zoomWidth / 2), 0, mapWidth);
     let heightLength = heightIndex + zoomHeight;
     let widthLength = widthIndex + zoomWidth;
-    let outerCount = 0;
-    let innerCount = 0;
 
     for (heightIndex; heightIndex < heightLength; heightIndex++) {
         outerCount ++;

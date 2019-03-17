@@ -4,7 +4,7 @@ import {initNewWorld, applyYearsRain, applySeasonsRain, advanceSeason, increaseM
 
 const worldOptions = {
     height: 80,
-    width: 180,
+    width: 160,
     // height: 10,
     // width: 10,
     zoomLevel: 2,

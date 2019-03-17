@@ -83,7 +83,7 @@ class SquareLifeforms extends Component {
                     <p><strong>{selectedLifeform.name}</strong> <em>{selectedLifeform.solarRatio}</em></p>
                     <p>Min Precip: {selectedLifeform.minPrecip}</p>
                     <p>Drought Tolerance: {selectedLifeform.droughtTolerance}</p>
-                    <p>Min Temp: {selectedLifeform.baseTemp}</p>
+                    <p>Min Temp: {selectedLifeform.minTemp}</p>
                     <p>Strength {selectedLifeform.foliageStrength}</p>
                 </div>}
 

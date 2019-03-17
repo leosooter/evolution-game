@@ -23,7 +23,7 @@ class Display extends Component{
                     </div>
 
                     <div className="displayStat precipStat" style={{background: square.rainfallStyle}}>
-                        PrecipArray: <em>{square.avgPrecipArray && square.avgPrecipArray.map(avg => (<span>{avg} | </span>))}</em>
+                        PrecipArray: <em>{square.avgPrecipArray && square.avgPrecipArray.map((avg, index) => (<span key={index}>{avg} | </span>))}</em>
                     </div>
 
                     <div className="displayStat tempStat" style={{background: square.temperatureStyle}}>
