@@ -1,9 +1,11 @@
-import {sample, shuffle, clamp, mean, sortBy, sortedIndexBy, round} from "lodash";
+import {sum, sample, shuffle, clamp, mean, sortBy, sortedIndexBy, round, remove, cloneDeep} from "lodash";
 import {getGridColor, colorTracker, randomColor} from "./color-helpers";
 import {worldColorsGrid} from "../config/colors-config";
 import {random} from "./utilities";
+import shortid from "shortid";
 import gridMocks from "../../mocks/grid-mocks";
-import {loadPlantArray} from "./animal-helpers/base-animals";
+import {loadPlantArray, applySurvivalStatsToPlant} from "./animal-helpers/base-animals";
+import { debug } from "util";
 
 const directionArray = ["e", "s", "w", "n"];
 const squareSideArray = ["e", "s", "w", "n", "ne", "nw", "se", "sw"];
@@ -19,7 +21,11 @@ let removedPlants = 0;
 
 let globalGrid = [];
 let globalZoomArray = [];
-let plantArray = loadPlantArray(50);
+let plants = loadPlantArray(1);
+let plantObj = plants.plantObj;
+let plantArray = plants.plantArray;
+
+let plantCompetitionRuns = 0;
 
 
 let rainLeft;
@@ -500,12 +506,104 @@ export function decreaseMoisture(amount = 1) {
 
 //////////////////////////////////// Biosphere
 
+function testMutationAgainstSquares(plant, squares) {
+    for (let index = 0; index < squares.length; index++) {
+        plantCompetitionRuns ++;
+        competePlantAgainstSquare(squares[index], plant);
+    }
+}
+
+function mutateArray(array, power) {
+    if (random(1, 5) === 5) {
+        array.push(random(1, power))
+    } else if (array.length > 1 && random(1, 5) === 5) {
+        array.shift();
+    }
+
+    for (let index = 0; index < array.length; index++) {
+        array[index] += clamp(random(power * -1, power), 1, 50);
+    }
+}
+
+function newPlantMutation(basePlant, power) {
+    let plant = cloneDeep(basePlant);
+    plant.id = shortid.generate();
+    plant.square = [];
+    plant.ancestor = basePlant.id;
+    let {
+        foliageProfile,
+        rootProfile
+    } = plant;
+    mutateArray(foliageProfile, power);
+    mutateArray(rootProfile, power);
+
+    plant.foliageMass = sum(foliageProfile);
+    plant.rootMass = sum(rootProfile);
+    plant.totalMass = plant.foliageMass + plant.rootMass;
+
+    applySurvivalStatsToPlant(plant);
+    testMutationAgainstSquares(plant, basePlant.squares);
+    if(plant.squares.length > 0) {
+        return plant;
+    }
+
+    return null;
+}
+
+export function getMutationsForPlant(plant, number = 1, power = 5) {
+    let newPlantIds = [];
+    for (let count = 0; count < number; count++) {
+        let newPlant = newPlantMutation(plant, power);
+        if(newPlant) {
+            newPlantIds.push(newPlant.id);
+        }
+    }
+
+    return newPlantIds;
+}
+
+export function mutatePlants(plants, number, power) {
+    for (let index = 0; index < plants.length; index++) {
+        let plant = plants[index];
+        plant.mutations = getMutationsForPlant(plant, number, power);
+    }
+}
+
+function extinctPlant(plant) {
+    plantObj[plant.id].extinct = true;
+    remove(plants, (target) => target.id === plant.id);
+}
+
+function cullPlants() {
+    for (const key in plantObj) {
+        let plant = plantObj[key];
+        if (!plant.sqaures || plant.square.length <= 0) {
+            extinctPlant(plant);
+        }
+    }
+}
+
 function competePlantAgainstSquare(square, plant) {
+    plantCompetitionRuns++;
     if(Array.isArray(square.plants)) {
-        const position = sortedIndexBy(square.plants, plant, 'solarRatio');
-        square.plants.splice(position, 0, plant)
-        const removedPlant = square.plants.shift();
-        removedPlants++;
+        plant.squares.push(square.index);
+        // plant.test = [square.index];
+        // plant.test[0] = square;
+        // const position = sortedIndexBy(square.plants, plant, 'solarRatio');
+        // square.plants.splice(position, 0, plant);
+        if (!plantObj[plant.id]) {
+            plantObj[plant.id] = plant;
+        }
+
+        plantObj[plant.id].extinct = false;
+        // if(square.plants.length > 10) {
+        //     const removedPlant = square.plants.shift();
+        //     remove(removedPlant.squares, (target) => target.id === square.id);
+        //     if(removedPlant.squares.length <= 0) {
+        //         extinctPlant(removedPlant);
+        //     }
+        //     removedPlants++;
+        // }
     }
 }
 
@@ -556,14 +654,7 @@ function testPlantAgainstSquare(square, plant) {
         return;
     }
 
-    if (square.plants.length < 9) {
-        square.plants.push(plant);
-    } else if (square.plants.length === 9) {
-        square.plants.push(plant);
-        square.plants = sortBy(square.plants, ['solarRatio']);
-    } else if(plant.solarRatio > square.plants[0].solarRatio) {
-        competePlantAgainstSquare(square, plant);
-    }
+    competePlantAgainstSquare(square, plant);
 }
 
 function assignPlantsToSquare(square) {
@@ -692,7 +783,7 @@ export function initNewWorldParams(zoomLevel, waterLevel) {
     world.seasons = setSeasons(world.globalMoisture, world.globalTemp);
     world.currentSeason = world.seasons[2];
     world.zoomLevel = zoomLevel;
-    world.waterLevel = waterLevel;
+    world.waterLevel = -50;
 
     const tempModifier = world.currentSeason.avgTemp + random(-0.2, 0.2);
     seasonTemp = Math.ceil(baseTemp * tempModifier);
@@ -747,6 +838,13 @@ export function initNewWorld(worldOptions) {
     applyYearsRain(40, false, false);
 
     assignOrganismsToGrid();
+    cullPlants();
+
+    mutatePlants(plantArray);
+    console.log('Plant Array', plantArray);
+    console.log('Plant Object', plantObj);
+    console.log('plantCompetitionRuns', plantCompetitionRuns);
+
 
     let t2 = performance.now();
 

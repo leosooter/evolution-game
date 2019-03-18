@@ -3,10 +3,10 @@ import {APPLY_INITIAL_RAIN, APPLY_YEARLY_RAIN, SELECT_SQUARE, APPLY_SEASONS_RAIN
 import {initNewWorld, applyYearsRain, applySeasonsRain, advanceSeason, increaseMoisture, decreaseMoisture, moveTime, toggleZoom} from "../helpers/grid-helpers";
 
 const worldOptions = {
-    height: 80,
-    width: 160,
-    // height: 10,
-    // width: 10,
+    // height: 80,
+    // width: 160,
+    height: 50,
+    width: 50,
     zoomLevel: 2,
     waterLevel: 0
 }
