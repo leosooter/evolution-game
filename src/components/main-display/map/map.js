@@ -1,6 +1,8 @@
 import React, {Component} from "react";
 import "./map.css";
 import LowerDisplay from "../../lower-display/lower-display";
+import {world} from "../../../store/state";
+
 const viewTypes = {
     elevation: "elevationStyle",
     rainfall: "rainfallStyle",
@@ -12,7 +14,7 @@ const viewTypes = {
 class Map extends Component {
 
     handleSquareSelect = (square) => {
-        this.props.selectSquare(square);
+        this.props.selectSquare(square.id);
     }
 
     getSquareStyle = (square) => {
@@ -46,7 +48,7 @@ class Map extends Component {
             let rowArray = [];
 
             for (let j = 0; j < grid.width; j++) {
-                let square = gridArray[i][j];
+                let square = world.squaresObj[gridArray[i][j]];
 
                 const squareStyle = this.getSquareStyle(square);
                 rowArray.push(

@@ -5,11 +5,10 @@ import {random} from "./utilities";
 import shortid from "shortid";
 import gridMocks from "../../mocks/grid-mocks";
 import {loadPlantArray, applySurvivalStatsToPlant} from "./animal-helpers/base-animals";
-import { debug } from "util";
+import {world} from "../store/state";
 
 const directionArray = ["e", "s", "w", "n"];
 const squareSideArray = ["e", "s", "w", "n", "ne", "nw", "se", "sw"];
-const world = {};
 const startingTemp = 100;
 const EVAPORATION_RATE = .2;
 
@@ -17,13 +16,13 @@ let rejectedOnTemp = 0;
 let rejectedOnPrecip = 0;
 let rejectedOnDrought = 0;
 let removedPlants = 0;
+let successfulMutations = 0;
 
-
-let globalGrid = [];
-let globalZoomArray = [];
-let plants = loadPlantArray(1);
-let plantObj = plants.plantObj;
-let plantArray = plants.plantArray;
+// let world.globalGrid = [];
+// let world.globalZoomArray = [];
+// let plants = loadPlantArray(1);
+// let world.plantObj = plants.world.plantObj;
+// let world.plantArray = plants.world.plantArray;
 
 let plantCompetitionRuns = 0;
 
@@ -43,10 +42,10 @@ let isZoomed = false;
 
 ////////////////////////////////////////////////// Grid Utilities
 function getRandomFromGrid() {
-    let heightIndex = random(0, globalGrid.length - 1);
-    let widthIndex = random(0, globalGrid[0].length - 1);
+    let heightIndex = random(0, world.globalGrid.length - 1);
+    let widthIndex = random(0, world.globalGrid[0].length - 1);
 
-    return globalGrid[heightIndex][widthIndex]
+    return world.globalGrid[heightIndex][widthIndex]
 }
 
 function loopGrid(callBack, outerCallBack) {
@@ -54,55 +53,56 @@ function loopGrid(callBack, outerCallBack) {
         console.warn("callback must be a function --- in loopGrid()");
     }
 
-    let gridHeight = globalGrid.length;
-    let gridWidth = globalGrid[0].length;
+    let gridHeight = world.globalGrid.length;
+    let gridWidth = world.globalGrid[0].length;
 
     for (let heightIndex = 0; heightIndex < gridHeight; heightIndex++) {
-        outerCallBack && outerCallBack(globalGrid[heightIndex]);
+        outerCallBack && outerCallBack(world.globalGrid[heightIndex]);
         for (let widthIndex = 0; widthIndex < gridWidth; widthIndex++) {
-            const square = globalGrid[heightIndex][widthIndex];
+            const squareId = world.globalGrid[heightIndex][widthIndex];
+            const square = world.squaresObj[squareId];
             callBack(square);
         }
     }
 }
 
 function scanWest(callBack, outerCallBack) {
-    let gridHeight = globalGrid.length;
-    let gridWidth = globalGrid[0].length;
+    let gridHeight = world.globalGrid.length;
+    let gridWidth = world.globalGrid[0].length;
 
     for (let heightIndex = 0; heightIndex < gridHeight; heightIndex++) {
-        outerCallBack && outerCallBack(globalGrid[heightIndex]);
+        outerCallBack && outerCallBack(world.globalGrid[heightIndex]);
         for (let widthIndex = gridWidth - 1; widthIndex >= 0; widthIndex--) {
-            const square = globalGrid[heightIndex][widthIndex];
-
+            const squareId = world.globalGrid[heightIndex][widthIndex];
+            const square = world.squaresObj[squareId];
             callBack(square);
         }
     }
 }
 
 function scanSouth(callBack, outerCallBack) {
-    let gridHeight = globalGrid.length;
-    let gridWidth = globalGrid[0].length;
+    let gridHeight = world.globalGrid.length;
+    let gridWidth = world.globalGrid[0].length;
 
     for (let widthIndex = 0; widthIndex < gridWidth; widthIndex++) {
-        outerCallBack && outerCallBack(globalGrid[widthIndex]);
+        outerCallBack && outerCallBack(world.globalGrid[widthIndex]);
         for (let heightIndex = 0; heightIndex < gridHeight; heightIndex++) {
-            const square = globalGrid[heightIndex][widthIndex];
-
+            const squareId = world.globalGrid[heightIndex][widthIndex];
+            const square = world.squaresObj[squareId];
             callBack(square);
         }
     }
 }
 
 function scanNorth(callBack, outerCallBack) {
-    let gridHeight = globalGrid.length;
-    let gridWidth = globalGrid[0].length;
+    let gridHeight = world.globalGrid.length;
+    let gridWidth = world.globalGrid[0].length;
 
     for (let widthIndex = 0; widthIndex < gridWidth; widthIndex++) {
-        outerCallBack && outerCallBack(globalGrid[widthIndex]);
+        outerCallBack && outerCallBack(world.globalGrid[widthIndex]);
         for (let heightIndex = gridHeight - 1; heightIndex >= 0; heightIndex--) {
-            const square = globalGrid[heightIndex][widthIndex];
-
+            const squareId = world.globalGrid[heightIndex][widthIndex];
+            const square = world.squaresObj[squareId];
             callBack(square);
         }
     }
@@ -126,7 +126,7 @@ function scanGridByDirection(direction="e", callBack, outerCallBack) {
 
 ///////////////////////////// Grid creation
 
-export function newSquare(index, widthIndex, heightIndex, gridHeight, options={}) { // options param is used to generate set-value squares for mocks
+export function newSquare(id, widthIndex, heightIndex, gridHeight, options={}) { // options param is used to generate set-value squares for mocks
     const {setElevation, setTemp, setPrecip} = options;
 
     let square = {
@@ -140,7 +140,7 @@ export function newSquare(index, widthIndex, heightIndex, gridHeight, options={}
         totalTempArray: [0, 0, 0, 0],
         avgTempArray: [0, 0, 0, 0],
 
-        index,
+        id,
         latitude: heightIndex / gridHeight,
         widthIndex,
         heightIndex,
@@ -171,11 +171,13 @@ function setRandomGlobalGrid(height, width) {
         let heightIndex = gridHeight || 0;
 
         for (let gridWidth = 0; gridWidth < width; gridWidth++) {
-            row.push(newSquare(index, gridWidth, heightIndex, height));
+            let square = newSquare(index, gridWidth, heightIndex, height);
+            world.squaresObj[square.id] = square;
+            row.push(square.id);
             index ++;
         }
 
-        globalGrid.push(row);
+        world.globalGrid.push(row);
     }
     let t1 = performance.now();
 }
@@ -203,7 +205,7 @@ function assignElevationFromSquare(current, variance) {
     const shuffledDirectionArray = shuffle(current.mainSidesArray);
 
     for (let index = 0; index < shuffledDirectionArray.length; index++) {
-        let side = shuffledDirectionArray[index];
+        let side = world.squaresObj[shuffledDirectionArray[index]];
         if (!side.avgElevation) {
             side.avgElevation = getElevation(current.avgElevation, variance);
             current = side;
@@ -214,8 +216,8 @@ function assignElevationFromSquare(current, variance) {
 
 function fillMissedElevation(square) {
     shuffle(directionArray).forEach(side => {
-        if (square[side] && square[side].avgElevation) {
-            square.avgElevation = square[side].avgElevation;
+        if (square[side] && world.squaresObj[square[side]].avgElevation) {
+            square.avgElevation = world.squaresObj[square[side]].avgElevation;
             return;
         }
     });
@@ -324,41 +326,45 @@ function assignGridColorsToGrid() {
 
 export function assignSidesToSquare(square) {
     const {widthIndex, heightIndex} = square
-    const row = globalGrid[heightIndex];
+    const row = world.globalGrid[heightIndex];
 
     if (widthIndex > 0) {
-        square.w = row[widthIndex - 1];
-        square.allSidesArray.push(square.w);
-        square.mainSidesArray.push(square.w);
+        let wSquare = world.squaresObj[row[widthIndex - 1]]
+        square.w = wSquare.id;
+        square.allSidesArray.push(wSquare.id);
+        square.mainSidesArray.push(wSquare.id);
 
-        square.w.e = square;
-        square.w.allSidesArray.push(square);
-        square.w.mainSidesArray.push(square);
+        wSquare.e = square.id;
+        wSquare.allSidesArray.push(square.id);
+        wSquare.mainSidesArray.push(square.id);
 
         if (heightIndex > 0) {
-            square.nw = globalGrid[heightIndex - 1][widthIndex - 1];
-            square.allSidesArray.push(square.nw);
+            let nwSquare = world.squaresObj[world.globalGrid[heightIndex - 1][widthIndex - 1]];
+            square.nw = nwSquare.id;
+            square.allSidesArray.push(nwSquare.id);
 
-            square.nw.se = square;
-            square.nw.allSidesArray.push(square);
+            nwSquare.se = square.id;
+            nwSquare.allSidesArray.push(square.id);
         }
     }
 
     if (heightIndex > 0) {
-        square.n = globalGrid[heightIndex - 1][widthIndex];
-        square.allSidesArray.push(square.n);
-        square.mainSidesArray.push(square.n);
+        let nSquare = world.squaresObj[world.globalGrid[heightIndex - 1][widthIndex]]
+        square.n = nSquare.id;
+        square.allSidesArray.push(nSquare.id);
+        square.mainSidesArray.push(nSquare.id);
 
-        square.n.s = square;
-        square.n.allSidesArray.push(square);
-        square.n.mainSidesArray.push(square);
+        nSquare.s = square.id;
+        nSquare.allSidesArray.push(square.id);
+        nSquare.mainSidesArray.push(square.id);
 
         if (widthIndex < heightIndex - 1) {
-            square.ne = globalGrid[heightIndex - 1][widthIndex + 1];
-            square.allSidesArray.push(square.ne);
+            let neSquare = world.squaresObj[world.globalGrid[heightIndex - 1][widthIndex + 1]];
+            square.ne = neSquare.id;
+            square.allSidesArray.push(neSquare.id);
 
-            square.ne.sw = square;
-            square.ne.allSidesArray.push(square);
+            neSquare.sw = square.id;
+            neSquare.allSidesArray.push(square.id);
         }
     }
 }
@@ -508,8 +514,9 @@ export function decreaseMoisture(amount = 1) {
 
 function testMutationAgainstSquares(plant, squares) {
     for (let index = 0; index < squares.length; index++) {
-        plantCompetitionRuns ++;
-        competePlantAgainstSquare(squares[index], plant);
+        // plantCompetitionRuns ++;
+        let square = world.squaresObj[squares[index]];
+        competePlantAgainstSquare(square, plant);
     }
 }
 
@@ -528,7 +535,7 @@ function mutateArray(array, power) {
 function newPlantMutation(basePlant, power) {
     let plant = cloneDeep(basePlant);
     plant.id = shortid.generate();
-    plant.square = [];
+    plant.squares = [];
     plant.ancestor = basePlant.id;
     let {
         foliageProfile,
@@ -544,6 +551,7 @@ function newPlantMutation(basePlant, power) {
     applySurvivalStatsToPlant(plant);
     testMutationAgainstSquares(plant, basePlant.squares);
     if(plant.squares.length > 0) {
+        successfulMutations ++;
         return plant;
     }
 
@@ -562,22 +570,25 @@ export function getMutationsForPlant(plant, number = 1, power = 5) {
     return newPlantIds;
 }
 
-export function mutatePlants(plants, number, power) {
-    for (let index = 0; index < plants.length; index++) {
-        let plant = plants[index];
+export function mutatePlants(number, power) {
+    for (let index = 0; index < world.plantArray.length; index++) {
+        let plantId = world.plantArray[index];
+        let plant = world.plantObj[plantId];
         plant.mutations = getMutationsForPlant(plant, number, power);
     }
 }
 
 function extinctPlant(plant) {
-    plantObj[plant.id].extinct = true;
-    remove(plants, (target) => target.id === plant.id);
+    world.plantObj[plant.id].extinct = true;
+    remove(world.plantArray, (targetId) => {
+        return targetId === plant.id
+    });
 }
 
 function cullPlants() {
-    for (const key in plantObj) {
-        let plant = plantObj[key];
-        if (!plant.sqaures || plant.square.length <= 0) {
+    for (const key in world.plantObj) {
+        let plant = world.plantObj[key];
+        if (plant.squares.length <= 0) {
             extinctPlant(plant);
         }
     }
@@ -586,24 +597,25 @@ function cullPlants() {
 function competePlantAgainstSquare(square, plant) {
     plantCompetitionRuns++;
     if(Array.isArray(square.plants)) {
-        plant.squares.push(square.index);
-        // plant.test = [square.index];
+        plant.squares.push(square.id);
+        // plant.test = [square.id];
         // plant.test[0] = square;
-        // const position = sortedIndexBy(square.plants, plant, 'solarRatio');
-        // square.plants.splice(position, 0, plant);
-        if (!plantObj[plant.id]) {
-            plantObj[plant.id] = plant;
+        const position = sortedIndexBy(square.plants, plant, 'solarRatio');
+        square.plants.splice(position, 0, {plantId: plant.id, solarRatio: plant.solarRatio});
+
+        if (!world.plantObj[plant.id]) {
+            world.plantObj[plant.id] = plant;
         }
 
-        plantObj[plant.id].extinct = false;
-        // if(square.plants.length > 10) {
-        //     const removedPlant = square.plants.shift();
-        //     remove(removedPlant.squares, (target) => target.id === square.id);
-        //     if(removedPlant.squares.length <= 0) {
-        //         extinctPlant(removedPlant);
-        //     }
-        //     removedPlants++;
-        // }
+        world.plantObj[plant.id].extinct = false;
+        if(square.plants.length > 10) {
+            const removedPlant = world.plantObj[square.plants.shift().plantId];
+            remove(removedPlant.squares, (targetId) => targetId === square.id);
+            if(removedPlant.squares.length <= 0) {
+                extinctPlant(removedPlant);
+            }
+            removedPlants++;
+        }
     }
 }
 
@@ -662,8 +674,8 @@ function assignPlantsToSquare(square) {
         return;
     }
 
-    for (let index = 0; index < plantArray.length; index++) {
-        const plant = plantArray[index];
+    for (let index = 0; index < world.plantArray.length; index++) {
+        const plant = world.plantObj[world.plantArray[index]];
         testPlantAgainstSquare(square, plant);
     }
 }
@@ -675,11 +687,6 @@ function assignOrganismsToSquare(square) {
 
 function assignOrganismsToGrid() {
     loopGrid(assignOrganismsToSquare);
-    console.log('rejectedOnTemp', rejectedOnTemp);
-    console.log('rejectedOnPrecip', rejectedOnPrecip);
-    console.log('rejectedOnDrought', rejectedOnDrought);
-
-    console.log('removedPlants', removedPlants);
 }
 
 
@@ -783,7 +790,7 @@ export function initNewWorldParams(zoomLevel, waterLevel) {
     world.seasons = setSeasons(world.globalMoisture, world.globalTemp);
     world.currentSeason = world.seasons[2];
     world.zoomLevel = zoomLevel;
-    world.waterLevel = -50;
+    world.waterLevel = waterLevel;
 
     const tempModifier = world.currentSeason.avgTemp + random(-0.2, 0.2);
     seasonTemp = Math.ceil(baseTemp * tempModifier);
@@ -801,8 +808,8 @@ function getReturnState() {
         totalSeasons,
         worldColorsGrid,
         grid: {
-            gridArray: globalGrid,
-            zoomArray: globalZoomArray,
+            gridArray: world.globalGrid,
+            zoomArray: world.globalZoomArray,
             height: mapHeight,
             width: mapWidth,
             mapZoomHeight,
@@ -814,6 +821,11 @@ function getReturnState() {
 
 // Handles initial setup of a new world. Can be passed an optional pre-defined mock grid or world-params for testing
 export function initNewWorld(worldOptions) {
+    console.log('World', world);
+    let plants = loadPlantArray(100);
+    world.plantObj = plants.plantObj;
+    world.plantArray = plants.plantArray;
+
     let t1 = performance.now();
     const{height, width, zoomLevel, waterLevel, grid, woldParams} = worldOptions;
 
@@ -825,14 +837,15 @@ export function initNewWorld(worldOptions) {
     if(!grid) {
         setRandomGlobalGrid(height, width);
     } else {
-        globalGrid = grid;
+        world.globalGrid = grid;
     }
 
     assignSidesToGrid();
 
     // assignFromLeft();
 
-    let randomSquare = getRandomFromGrid();
+    let randomSquareId = getRandomFromGrid();
+    let randomSquare = world.squaresObj[randomSquareId];
     assignElevationFromSquare(randomSquare, 2);
 
     applyYearsRain(40, false, false);
@@ -840,9 +853,17 @@ export function initNewWorld(worldOptions) {
     assignOrganismsToGrid();
     cullPlants();
 
-    mutatePlants(plantArray);
-    console.log('Plant Array', plantArray);
-    console.log('Plant Object', plantObj);
+    mutatePlants(2, 5);
+    console.log('rejectedOnTemp', rejectedOnTemp);
+    console.log('rejectedOnPrecip', rejectedOnPrecip);
+    console.log('rejectedOnDrought', rejectedOnDrought);
+
+    console.log('removedPlants', removedPlants);
+    console.log('successfulMutations', successfulMutations);
+    console.log('--------------------------------------------------');
+
+    console.log('Plant Array', world.plantArray);
+    console.log('Plant Object', world.plantObj);
     console.log('plantCompetitionRuns', plantCompetitionRuns);
 
 
@@ -874,7 +895,7 @@ export function toggleZoom(square, zoomHeight = 9, zoomWidth = 15) {
 
     isZoomed = !isZoomed;
     if (!isZoomed) {
-        globalZoomArray = [];
+        world.globalZoomArray = [];
         return getReturnState();
     }
 
@@ -891,11 +912,11 @@ export function toggleZoom(square, zoomHeight = 9, zoomWidth = 15) {
         outerCount ++;
         let row = [];
         for (let index = widthIndex; index < widthLength; index++) {
-            row.push(newZoomSquare(globalGrid[heightIndex][index]));
+            row.push(newZoomSquare(world.globalGrid[heightIndex][index]));
             innerCount ++;
         }
 
-        globalZoomArray.push(row);
+        world.globalZoomArray.push(row);
     }
 
     return getReturnState();

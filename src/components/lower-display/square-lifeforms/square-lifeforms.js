@@ -1,5 +1,6 @@
 import React, {Component} from "react";
 import "./square-lifeforms.css";
+import { world } from "../../../store/state";
 
 class SquareLifeforms extends Component {
     state = {
@@ -32,6 +33,7 @@ class SquareLifeforms extends Component {
 
     renderPlantProfile = () => {
         const selectedPlant = this.state.selectedLifeform;
+
         if (selectedPlant.foliageProfile.length > 0 && selectedPlant.rootProfile.length) {
             return (
                 <div className="plantProfile">
@@ -46,12 +48,18 @@ class SquareLifeforms extends Component {
 
     renderLifeforms = (lifeforms) => {
         return lifeforms.map(
-            (lifeform) => (<div className="lifeform" onClick={this.selectedLifeform.bind(this, lifeform)}>{lifeform.name} ~ {lifeform.survivalScore}</div>)
+            (lifeformObj) =>
+            {
+                let lifeform = world.plantObj[lifeformObj.plantId];
+                return (<div className="lifeform" onClick={this.selectedLifeform.bind(this, lifeform)}>
+                    {lifeform.name} ~ {lifeform.survivalScore}
+                </div>)
+            }
         )
     }
 
     componentDidUpdate(prevProps) {
-        if (prevProps.selectedSquare && prevProps.selectedSquare.index !== this.props.selectedSquare.index && this.state.selectedLifeform) {
+        if (prevProps.selectedSquare && prevProps.selectedSquare.id !== this.props.selectedSquare.id && this.state.selectedLifeform) {
             this.setState({
                 selectedLifeform: null
             })
@@ -66,8 +74,10 @@ class SquareLifeforms extends Component {
         const plants = this.props.selectedSquare.plants;
         const animals = this.props.selectedSquare.animals;
         const selectedLifeform = this.state.selectedLifeform;
-        console.log('Selected Life Form', selectedLifeform);
-
+        let ancestor = "None"
+        if(selectedLifeform && selectedLifeform.ancestor) {
+            ancestor = world.plantObj[selectedLifeform.ancestor].name
+        }
 
         return (
             <div className="lifeformDisplayWrapper">
@@ -85,6 +95,7 @@ class SquareLifeforms extends Component {
                     <p>Drought Tolerance: {selectedLifeform.droughtTolerance}</p>
                     <p>Min Temp: {selectedLifeform.minTemp}</p>
                     <p>Strength {selectedLifeform.foliageStrength}</p>
+                    <p>Ancestor {ancestor}</p>
                 </div>}
 
                 {selectedLifeform && <div>

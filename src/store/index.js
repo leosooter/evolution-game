@@ -1,12 +1,13 @@
 import {createStore} from "redux";
 import {APPLY_INITIAL_RAIN, APPLY_YEARLY_RAIN, SELECT_SQUARE, APPLY_SEASONS_RAIN, ADVANCE_SEASON, INCREASE_MOISTURE, DECREASE_MOISTURE, MOVE_TIME, TOGGLE_ZOOM} from "./types";
 import {initNewWorld, applyYearsRain, applySeasonsRain, advanceSeason, increaseMoisture, decreaseMoisture, moveTime, toggleZoom} from "../helpers/grid-helpers";
+import {world} from "../store/state";
 
 const worldOptions = {
-    // height: 80,
-    // width: 160,
-    height: 50,
-    width: 50,
+    height: 80,
+    width: 160,
+    // height: 3,
+    // width: 3,
     zoomLevel: 2,
     waterLevel: 0
 }
@@ -65,7 +66,7 @@ function reducer(state, action) {
         break;
 
         case SELECT_SQUARE:
-            const square = state.grid.gridArray[action.payload.heightIndex][action.payload.widthIndex] || {}
+            const square = world.squaresObj[action.payload] || {}
             console.log('Selected Square', square);
 
             return {

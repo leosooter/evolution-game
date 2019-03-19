@@ -1,6 +1,7 @@
 import {sample, clamp, round, cloneDeep, sum} from "lodash";
 import shortid from "shortid";
 import {random, matchInverseRangeToRange, matchRangeToRange} from "../utilities";
+import {world, globalGrid, globalZoomArray, plants} from "../../store/state";
 
 let maxPlant = {solarRatio: 0, name:"NONE"};
 
@@ -12,7 +13,7 @@ let testPlant = {
     foliageRatio: 0.7878787878787878,
     foliageStrength: 0.08,
     height: 4,
-    id: 1000,
+    id: "AAAAAAAAAA",
     minPrecip: 0,
     minTemp: -30,
     name: "___ Test Plant ___",
@@ -20,7 +21,7 @@ let testPlant = {
     rootProfile: [27],
     rootRatio: 0.21212121212121213,
     squares: [],
-    solarRatio: 50,
+    solarRatio: .01,
     totalMass: 132,
     extinct: true
 }
@@ -193,6 +194,8 @@ export function generateRandomPlant(id) {
 }
 
 export function loadPlantArray(number) {
+    console.log('loadPlantArray');
+
     let plantObj = {};
     let plantArray = [];
     // let test = matchInverseRangeToRange([1, 15], [1, 20], 20); // 7
@@ -201,17 +204,16 @@ export function loadPlantArray(number) {
     // test = matchInverseRangeToRange([1, 15], [1, 20], 1); // 7
     // console.log('test', test === 15, test);
 
-    // for (let count = 0; count < number; count++) {
-    //     let id = shortid.generate();
-    //     let plant = generateRandomPlant(id)
-    //     plantObj[id] = plant;
+    for (let count = 0; count < number; count++) {
+        let id = shortid.generate();
+        let plant = generateRandomPlant(id)
+        plantObj[id] = plant;
 
-    //     plantArray.push(plant);
-    // }
-    let id = shortid.generate();
-    testPlant.id = id;
-    plantObj[id] = testPlant;
-    plantArray.push(testPlant)
+        plantArray.push(plant.id);
+    }
+
+    plantObj[testPlant.id] = testPlant;
+    plantArray.push(testPlant.id)
     console.log('*****************************************************************');
 
     console.log('maxScore', maxPlant.solarRatio, maxPlant.name);
@@ -220,5 +222,4 @@ export function loadPlantArray(number) {
     // plantArray.push(testPlant);
 
     return {plantObj, plantArray};
-    // return [];
 }
