@@ -18,10 +18,19 @@ class Map extends Component {
     }
 
     getSquareStyle = (square) => {
-
+        const gridHeight = this.props.grid.height;
         const gridWidth = this.props.grid.width;
-        const squareSize = 1100 / gridWidth;
+        const squareSize = 500 / gridHeight;
         const viewTypeStyle = square[viewTypes[this.props.viewType]] || null;
+
+        if (this.props.selectedSquare && square.id === this.props.selectedSquare.id) {
+            return {
+                ...square.cornerStyles,
+                height: `${squareSize}px`,
+                width: `${squareSize}px`,
+                background: "red"
+            }
+        }
 
         if(this.props.viewType === "gridColor") {
             return {

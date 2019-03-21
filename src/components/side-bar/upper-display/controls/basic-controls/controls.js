@@ -6,6 +6,10 @@ class Controls extends Component {
         return (
             <div className="controlsWrapper">
                 <div className="controlColumn">
+                    <button className="controlButton" onClick={this.props.evolveOrganisms}>
+                        Evolve Organisms
+                    </button>
+
                     <button className="controlButton" onClick={this.props.applyInitialRain}>
                         Initial Rain
                     </button>

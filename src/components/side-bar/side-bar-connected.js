@@ -7,6 +7,7 @@ function mapStateToProps(state) {
 
 function mapDispatchToProps(dispatch) {
     return {
+        evolveOrganisms: () => dispatch({type: "EVOLVE_ORGANISMS"}),
         applyYearlyRain: () => dispatch({type: "APPLY_YEARLY_RAIN"}),
         applyInitialRain: () => dispatch({type: "APPLY_INITIAL_RAIN"}),
         applySeasonsRain: () => dispatch({type: "APPLY_SEASONS_RAIN"}),

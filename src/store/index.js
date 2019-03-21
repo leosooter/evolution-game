@@ -1,6 +1,6 @@
 import {createStore} from "redux";
-import {APPLY_INITIAL_RAIN, APPLY_YEARLY_RAIN, SELECT_SQUARE, APPLY_SEASONS_RAIN, ADVANCE_SEASON, INCREASE_MOISTURE, DECREASE_MOISTURE, MOVE_TIME, TOGGLE_ZOOM} from "./types";
-import {initNewWorld, applyYearsRain, applySeasonsRain, advanceSeason, increaseMoisture, decreaseMoisture, moveTime, toggleZoom} from "../helpers/grid-helpers";
+import {APPLY_INITIAL_RAIN, APPLY_YEARLY_RAIN, SELECT_SQUARE, APPLY_SEASONS_RAIN, ADVANCE_SEASON, INCREASE_MOISTURE, DECREASE_MOISTURE, MOVE_TIME, TOGGLE_ZOOM, EVOLVE_ORGANISMS} from "./types";
+import {initNewWorld, applyYearsRain, applySeasonsRain, advanceSeason, increaseMoisture, decreaseMoisture, moveTime, toggleZoom, evolveOrganisms} from "../helpers/grid-helpers";
 import {world} from "../store/state";
 
 const worldOptions = {
@@ -15,6 +15,14 @@ const defaultState = initNewWorld(worldOptions);
 
 function reducer(state, action) {
     switch (action.type) {
+        case EVOLVE_ORGANISMS:
+
+            return {
+                ...evolveOrganisms(1)
+            }
+
+        break;
+
         case APPLY_INITIAL_RAIN:
 
             return {

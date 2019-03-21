@@ -15,7 +15,7 @@ export function random(min, max) {
 }
 
 
-export function matchRangeToRange(targetRange, valueRange, value, roundTo = 2) {
+export function matchRangeToRange(targetRange, valueRange, value, roundTo = 0) {
     if (value === 0) {
         return 0
     }

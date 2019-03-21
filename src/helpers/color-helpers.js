@@ -104,7 +104,7 @@ function getMountainColor() {
         return morphColor({r,g,b}, 5);
 }
 
-export function getGridColor(square, waterLevel = 0, season) {
+export function getGridPlantColor(square, waterLevel = 0, season) {
     const {
         precipitation,
         plants,
@@ -153,78 +153,67 @@ export function getGridColor(square, waterLevel = 0, season) {
     }, 5);
 }
 
-// export function getGridColor(square, waterLevel = 0, season) {
-//     const {precipitation, avgElevation, baseTemp} = square;
+export function getGridColor(square, waterLevel = 0, season) {
+    const {precipitation, avgElevation, baseTemp} = square;
 
-//     if (avgElevation <= waterLevel) {
-//         return getWaterColor(baseTemp, square.avgElevation);
-//     }
+    if (avgElevation <= waterLevel) {
+        return getWaterColor(baseTemp, square.avgElevation);
+    }
 
-//     if ((baseTemp <= 15 && precipitation > 5 && random(0, baseTemp) <= 10)) {
-//         return getSnowColor();
-//     }
+    if ((baseTemp <= 15 && precipitation > 5 && random(0, baseTemp) <= 10)) {
+        return getSnowColor();
+    }
 
-//     if(avgElevation >= 80) {
-//         return getMountainColor();
-//     }
+    if(avgElevation >= 80) {
+        return getMountainColor();
+    }
 
-//     if(precipitation > 100) {
-//         return getRiverColor(baseTemp)
-//     }
+    if(precipitation > 100) {
+        return getRiverColor(baseTemp)
+    }
 
-//     if(precipitation > 80 && season === "Fall") {
-//         return getFallColor(baseTemp);
-//     }
+    if(precipitation > 80 && season === "Fall") {
+        return getFallColor(baseTemp);
+    }
 
-//     // if(square.precipitation > 100) {
-//     //     return {r: 255, g: 0, b: 0}
-//     // }
-//     // else if (square.precipitation === 100) {
-//     //     return {r: 255, g: 100, b: 100}
-//     // }
+    // if(square.precipitation > 100) {
+    //     return {r: 255, g: 0, b: 0}
+    // }
+    // else if (square.precipitation === 100) {
+    //     return {r: 255, g: 100, b: 100}
+    // }
 
-//     const maxIndex = worldColorsGrid.length - 1;
-//     const gridAdjust = 100 / worldColorsGrid.length;
-//     colorTracker.gridAdjust = gridAdjust;
+    const maxIndex = worldColorsGrid.length - 1;
+    const gridAdjust = 100 / worldColorsGrid.length;
 
-//     let precip = Math.floor((precipitation + 1) / gridAdjust);
-//     precip = precip > maxIndex ? maxIndex : precip;
-//     if (!colorTracker.precip[precip]) {
-//         colorTracker.precip[precip] = 1;
-//     } else {
-//         colorTracker.precip[precip]++;
-//     }
 
-//     let temp = Math.floor((baseTemp + 1) / gridAdjust);
-//     temp = temp > maxIndex ? maxIndex : temp;
+    let precip = Math.floor((precipitation + 1) / gridAdjust);
+    precip = precip > maxIndex ? maxIndex : precip;
 
-//     if (!colorTracker.temp[temp]) {
-//         colorTracker.temp[temp] = 1;
-//     } else {
-//         colorTracker.temp[temp]++;
-//     }
+    let temp = Math.floor((baseTemp + 1) / gridAdjust);
+    temp = temp > maxIndex ? maxIndex : temp;
 
-//     let colorSquare = worldColorsGrid[precip][temp] || blankColor;
+    let colorSquare = worldColorsGrid[precip][temp] || blankColor;
 
-//     const {r,g,b} = colorSquare;
-//     return morphColor({r,g,b}, 5);
-// }
+    const {r,g,b} = colorSquare;
+    return morphColor({r,g,b}, 5);
+}
 
-// export function applyYearlyRain(square) {
-//     const waterLevel = 0;
-//     const {precipitation, avgElevation, baseTemp} = square;
-//     if(avgElevation <= waterLevel) {
-//         return getWaterColor(baseTemp);
-//     }
+export function applyYearlyRain(square) {
+    const waterLevel = 0;
+    const {precipitation, avgElevation, baseTemp} = square;
+    if(avgElevation <= waterLevel) {
+        return getWaterColor(baseTemp);
+    }
 
-//     let g = Math.floor(200 - (avgElevation / 3)) + colorAdjust.g;
-//     let r = Math.floor(g * (1.25 - ((precipitation / 100) * 1.25))) + colorAdjust.g;
-//     let b = Math.floor(100 - baseTemp + 1) + colorAdjust.b;
+    let g = Math.floor(200 - (avgElevation / 3)) + colorAdjust.g;
+    let r = Math.floor(g * (1.25 - ((precipitation / 100) * 1.25))) + colorAdjust.g;
+    let b = Math.floor(100 - baseTemp + 1) + colorAdjust.b;
 
-//     return morphColor({r,g,b}, 3);
+    return morphColor({r,g,b}, 3);
 
-//     //desert brown r230 g160 b75
-// }
+    //desert brown r230 g160 b75
+}
 
 export function randomColor(colorType) {
 

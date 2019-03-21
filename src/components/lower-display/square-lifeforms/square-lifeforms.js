@@ -48,9 +48,9 @@ class SquareLifeforms extends Component {
 
     renderLifeforms = (lifeforms) => {
         return lifeforms.map(
-            (lifeformObj) =>
+            (lifeformId) =>
             {
-                let lifeform = world.plantObj[lifeformObj.plantId];
+                let lifeform = world.plantObj[lifeformId];
                 return (<div className="lifeform" onClick={this.selectedLifeform.bind(this, lifeform)}>
                     {lifeform.name} ~ {lifeform.survivalScore}
                 </div>)
@@ -59,7 +59,9 @@ class SquareLifeforms extends Component {
     }
 
     componentDidUpdate(prevProps) {
-        if (prevProps.selectedSquare && prevProps.selectedSquare.id !== this.props.selectedSquare.id && this.state.selectedLifeform) {
+        let prevId = prevProps.selectedSquare && prevProps.selectedSquare.id;
+        let currentId = this.props.selectedSquare && this.props.selectedSquare.id;
+        if (prevId !== currentId && this.state.selectedLifeform) {
             this.setState({
                 selectedLifeform: null
             })

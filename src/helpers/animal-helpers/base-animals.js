@@ -5,23 +5,65 @@ import {world, globalGrid, globalZoomArray, plants} from "../../store/state";
 
 let maxPlant = {solarRatio: 0, name:"NONE"};
 
-let testPlant = {
+export const testPlant1 = {
     depth: 1,
-    droughtTolerance: 3,
+    droughtTolerance: 4,
     foliageMass: 104,
     foliageProfile: [21, 77, 1, 3],
     foliageRatio: 0.7878787878787878,
     foliageStrength: 0.08,
     height: 4,
-    id: "AAAAAAAAAA",
+    id: "1-1-1-1-1-1-1-1",
     minPrecip: 0,
-    minTemp: -30,
-    name: "___ Test Plant ___",
+    minTemp: 40,
+    name: "___ Test Plant 1___",
     rootMass: 28,
     rootProfile: [27],
     rootRatio: 0.21212121212121213,
     squares: [],
-    solarRatio: .01,
+    solarRatio: .5,
+    totalMass: 132,
+    extinct: true
+}
+
+export const testPlant2 = {
+    depth: 1,
+    droughtTolerance: 4,
+    foliageMass: 104,
+    foliageProfile: [21, 77, 1, 3],
+    foliageRatio: 0.7878787878787878,
+    foliageStrength: 0.08,
+    height: 4,
+    id: "2-2-2-2-2-2-2-2-2",
+    minPrecip: 0,
+    minTemp: 10,
+    name: "___ Test Plant 2___",
+    rootMass: 28,
+    rootProfile: [27],
+    rootRatio: 0.21212121212121213,
+    squares: [],
+    solarRatio: .5,
+    totalMass: 132,
+    extinct: true
+}
+
+export const testPlant3 = {
+    depth: 1,
+    droughtTolerance: 4,
+    foliageMass: 104,
+    foliageProfile: [21, 77, 1, 3],
+    foliageRatio: 0.7878787878787878,
+    foliageStrength: 0.08,
+    height: 4,
+    id: "3-3-3-3-3-3-3-3-3-3",
+    minPrecip: 0,
+    minTemp: -30,
+    name: "___ Test Plant 3 ___",
+    rootMass: 28,
+    rootProfile: [27],
+    rootRatio: 0.21212121212121213,
+    squares: [],
+    solarRatio: .5,
     totalMass: 132,
     extinct: true
 }
@@ -137,9 +179,9 @@ export function applySurvivalStatsToPlant(plant) {
     const rootDepthRatio = round((plant.rootProfile && plant.rootProfile.length || 1) / plant.totalMass, 2); // (.002 1)
 
     plant.name = sample(nameArray1) + " " + sample(nameArray2);
-    plant.minTemp = matchInverseRangeToRange([-10, 70], [0, 2], adjustedStrength);
-    plant.minPrecip = matchInverseRangeToRange([1, 15], [.01, .7], rootSurfaceSpreadRatio);
-    plant.droughtTolerance = round(matchRangeToRange([0, 3], [.01, .2], rootDepthRatio));
+    plant.minTemp = matchInverseRangeToRange([-10, 70], [0, 2], adjustedStrength, 2);
+    plant.minPrecip = matchInverseRangeToRange([1, 15], [.01, .7], rootSurfaceSpreadRatio, 2);
+    plant.droughtTolerance = matchRangeToRange([0, 3], [.01, .2], rootDepthRatio);
 }
 
 export function generateRandomPlant(id) {
@@ -212,14 +254,13 @@ export function loadPlantArray(number) {
         plantArray.push(plant.id);
     }
 
-    plantObj[testPlant.id] = testPlant;
-    plantArray.push(testPlant.id)
+    // plantObj[testPlant1.id] = testPlant1;
+    // plantArray.push(testPlant1.id)
     console.log('*****************************************************************');
 
     console.log('maxScore', maxPlant.solarRatio, maxPlant.name);
     console.log('Max Plant', maxPlant);
     console.log('*****************************************************************');
-    // plantArray.push(testPlant);
 
     return {plantObj, plantArray};
 }
