@@ -10,6 +10,10 @@ class Controls extends Component {
                         Evolve Organisms
                     </button>
 
+                    <button className="controlButton" onClick={this.props.reapplyOrganisms}>
+                        Reapply Organisms
+                    </button>
+
                     <button className="controlButton" onClick={this.props.applyInitialRain}>
                         Initial Rain
                     </button>

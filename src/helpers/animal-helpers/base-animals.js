@@ -180,7 +180,7 @@ export function applySurvivalStatsToPlant(plant) {
 
     plant.name = sample(nameArray1) + " " + sample(nameArray2);
     plant.minTemp = matchInverseRangeToRange([-10, 70], [0, 2], adjustedStrength, 2);
-    plant.minPrecip = matchInverseRangeToRange([1, 15], [.01, .7], rootSurfaceSpreadRatio, 2);
+    plant.minPrecip = matchInverseRangeToRange([.1, 20], [.01, .99], rootSurfaceSpreadRatio, 2);
     plant.droughtTolerance = matchRangeToRange([0, 3], [.01, .2], rootDepthRatio);
 }
 

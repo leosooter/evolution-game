@@ -27,6 +27,8 @@ let rainLeft;
 let totalYears = 1;
 let totalSeasons = 0;
 let totalEvolutions = 0;
+let lowestMinPrecipMutaion = {minPrecip: 100};
+let lowestSurvivingMinPrecip = {minPrecip: 100};
 
 let cornerRadius = 30;
 let baseTemp = 100;
@@ -118,6 +120,75 @@ function scanGridByDirection(direction="e", callBack, outerCallBack) {
     }
 
     scanFunctions[direction](callBack, outerCallBack)
+}
+
+function traverseWest(originHeight, originWidth, layer, callBack) {
+    let height = originHeight + layer;
+    let startWidth = originWidth - layer;
+
+    for (let index = startWidth; index <= originWidth + layer; index++) {
+        const squareId = world.globalGrid[height] && world.globalGrid[height][index];
+        if(squareId) {
+            const square = world.squaresObj[squareId];
+            callBack(square, layer);
+        }
+    }
+}
+
+function traverseEast(originHeight, originWidth, layer, callBack) {
+    let height = originHeight - layer;
+    let startWidth = originWidth + layer;
+
+    for (let index = startWidth; index >= originWidth - layer; index--) {
+        const squareId = world.globalGrid[height] && world.globalGrid[height][index];
+        if (squareId) {
+            const square = world.squaresObj[squareId];
+            callBack(square, layer);
+        }
+    }
+}
+
+function traverseSouth(originHeight, originWidth, layer, callBack) {
+    let width = originWidth + layer;
+    let startHeight = originHeight - layer;
+
+    for (let index = startHeight; index <= originHeight + layer; index++) {
+        const squareId = world.globalGrid[index] && world.globalGrid[index][width];
+        if (squareId) {
+            const square = world.squaresObj[squareId];
+            callBack(square, layer);
+        }
+    }
+}
+
+function traverseNorth(originHeight, originWidth, layer, callBack) {
+    let width = originWidth - layer;
+    let startHeight = originHeight + layer;
+
+    for (let index = startHeight; index >= originHeight - layer; index--) {
+        const squareId = world.globalGrid[index] && world.globalGrid[index][width];
+        if (squareId) {
+            const square = world.squaresObj[squareId];
+            callBack(square, layer);
+        }
+    }
+}
+
+
+function spreadFromSquare(square, distance = 1, callBack) {
+    const originHeight = square.heightIndex;
+    const originWidth = square.widthIndex;
+
+    let saftey = 100;
+    let layer= 1;
+    while (saftey > 0 && layer <= distance) {
+        traverseWest(originHeight, originWidth, layer, callBack);
+        traverseSouth(originHeight, originWidth, layer, callBack);
+        traverseEast(originHeight, originWidth, layer, callBack);
+        traverseNorth(originHeight, originWidth, layer, callBack);
+
+        layer ++;
+    }
 }
 
 
@@ -313,10 +384,20 @@ function assignGridColorToSquare(square) {
     let b = r;
     square.elevationStyle = `rgb(${r}, ${g}, ${b})`;
 
-    b = 255 - square.precipitation;
-    r = b - 30;
-    g = b - 30;
-    square.rainfallStyle = `rgb(${r}, ${g}, ${b})`;
+    if (square.avgElevation < world.waterLevel) {
+        square.rainfallStyle = "white";
+    } else if(square.avgPrecip < 3) {
+        square.rainfallStyle = "yellow";
+    } else if (square.maxDroughtLength > 0) {
+        square.rainfallStyle = "orange";
+    } else if (square.maxDroughtLength > 2) {
+        square.rainfallStyle = "red";
+    } else {
+        b = 255 - square.precipitation;
+        r = b - 30;
+        g = b - 30;
+        square.rainfallStyle = `rgb(${r}, ${g}, ${b})`;
+    }
 
     r = square.baseTemp + 100;
     g = r - 70;
@@ -464,7 +545,7 @@ function applyRain(square) {
 
 function distributeRain(square) {
     let elevationBonus = matchRangeToRange([0, 1], [0, 99], square.avgElevation, 2);
-    const rainAmount = round((random(.1, .5) * rainMultiplier) * elevationBonus, 2);
+    const rainAmount = round((random(1, 2) * rainMultiplier) * elevationBonus, 2);
     rainLeft = rainLeft * rainMultiplier;
 
     if (rainLeft > 0 && square.avgElevation > world.waterLevel) {
@@ -474,7 +555,7 @@ function distributeRain(square) {
         applyPrecipStatsToSquare(square);
 
     } else if (square.avgElevation <= world.waterLevel) {
-        rainLeft += random(.05, .1) * rainMultiplier;
+        rainLeft += random(.2, .5) * rainMultiplier;
     }
 }
 
@@ -546,6 +627,55 @@ export function decreaseMoisture(amount = 1) {
 
 //////////////////////////////////// Biosphere
 
+/*
+Plant dispersal types:
+1) spread to adjacent - moves outward by a radius
+2) random dispersal - spreads outward to x random squares within a range
+*/
+
+function spreadPlantToAdjacent(plant, start, distance) {
+    spreadFromSquare(start, distance, (square) =>{
+        testPlantAgainstSquare(square, plant);
+    });
+}
+
+function disperseFromPoint(start, maxDistance, times, callBack) {
+    const {heightIndex, widthIndex} = start;
+
+    for (let count = 0; count < times; count++) {
+        const randWidth = random(widthIndex - maxDistance, widthIndex + maxDistance);
+        const randHeight = random(heightIndex - maxDistance, heightIndex + maxDistance);
+        const squareId = world.globalGrid[randHeight] && world.globalGrid[randHeight][randWidth];
+
+        if (squareId) {
+            const square = world.squaresObj[squareId];
+
+            if (square) {
+                callBack(square);
+            }
+        }
+    }
+}
+
+function dispersePlant(plant, start, numSeeds, maxDistance) {
+    const {heightIndex, widthIndex} = start;
+
+    colorYellow(start);
+    for (let seed = 0; seed < numSeeds; seed++) {
+        const randWidth = random(widthIndex - maxDistance, widthIndex + maxDistance);
+        const randHeight = random(heightIndex - maxDistance, heightIndex + maxDistance);
+        const squareId = world.plantArray[randHeight] && world.plantArray[randHeight][randWidth];
+
+        if (squareId) {
+            const square = world.squaresObj[squareId];
+            if(square && square.avgElevation > world.waterLevel) {
+                colorRed(square);
+                testPlantAgainstSquare(square, plant);
+            }
+        }
+    }
+}
+
 function testMutationAgainstSquares(plant, squares) {
     for (let index = 0; index < squares.length; index++) {
         // plantCompetitionRuns ++;
@@ -553,12 +683,17 @@ function testMutationAgainstSquares(plant, squares) {
         // console.log('testing plant', plant.id, 'in square', square.id, 'against ownSquare', square.id);
 
         testPlantAgainstSquare(square, plant);
+        disperseFromPoint(square, 10, 10, (testSquare) => {
+            testPlantAgainstSquare(testSquare, plant);
+        })
 
-        for (let index = 0; index < square.allSidesArray.length; index++) {
-            const side = world.squaresObj[square.allSidesArray[index]];
-            // console.log('testing plant', plant.id, 'in square', square.id, 'against square', side.id);
-            testPlantAgainstSquare(side, plant);
-        }
+        // spreadPlantToAdjacent(plant, square, 10)
+
+        // for (let index = 0; index < square.allSidesArray.length; index++) {
+        //     const side = world.squaresObj[square.allSidesArray[index]];
+        //     // console.log('testing plant', plant.id, 'in square', square.id, 'against square', side.id);
+        //     testPlantAgainstSquare(side, plant);
+        // }
     }
 }
 
@@ -594,8 +729,15 @@ function newPlantMutation(basePlant, power) {
     applySurvivalStatsToPlant(plant);
     // console.log('testing new mutation against squares', basePlant.squares);
 
+    if (plant.minPrecip < lowestMinPrecipMutaion.minPrecip) {
+        lowestMinPrecipMutaion = plant;
+    }
+
     testMutationAgainstSquares(plant, basePlant.squares);
     if(plant.squares.length > 0) {
+        if (plant.minPrecip < lowestSurvivingMinPrecip.minPrecip) {
+            lowestSurvivingMinPrecip = plant;
+        }
         successfulMutations ++;
         return plant;
     }
@@ -635,7 +777,9 @@ export function evolvePlants(number, power) {
 export function evolveOrganisms(times) {
     totalEvolutions++;
     let t1 = performance.now()
-    evolvePlants(times, 5);
+    evolvePlants(times, 10);
+    console.log('lowest mutation', lowestMinPrecipMutaion);
+    console.log('lowest surviving', lowestSurvivingMinPrecip);
     console.log('evolveOrganisms time:', performance.now() - t1);
     return getReturnState();
 }
@@ -761,8 +905,13 @@ function assignOrganismsToSquare(square) {
     assignGridColorToSquare(square);
 }
 
-function assignOrganismsToGrid() {
+export function assignOrganismsToGrid() {
     loopGrid(assignOrganismsToSquare);
+    console.log('lowest mutation', lowestMinPrecipMutaion);
+    console.log('lowest surviving', lowestSurvivingMinPrecip);
+
+
+    return getReturnState();
 }
 
 
@@ -895,10 +1044,18 @@ function getReturnState() {
     }
 }
 
+function colorRed(square) {
+    square.elevationStyle = "red";
+}
+
+function colorYellow(square) {
+    square.elevationStyle = "yellow";
+}
+
 // Handles initial setup of a new world. Can be passed an optional pre-defined mock grid or world-params for testing
 export function initNewWorld(worldOptions) {
     console.log('World', world);
-    let plants = loadPlantArray(100);
+    let plants = loadPlantArray(3);
     world.plantObj = plants.plantObj;
     world.plantArray = plants.plantArray;
 
@@ -932,7 +1089,7 @@ export function initNewWorld(worldOptions) {
     console.log('assignElevationFromSquare time', performance.now() - a1);
 
     a1 = performance.now();
-    applyInitialRain(1, false);
+    applyInitialRain(2, false);
     console.log('applyInitialRain time', performance.now() - a1);
     console.log('totalRainApplied', totalRainApplied);
 
@@ -943,7 +1100,8 @@ export function initNewWorld(worldOptions) {
     let c1 = performance.now();
     cullPlants();
     console.log('cullPlants time', performance.now() - c1);
-
+    colorYellow(randomSquare);
+    disperseFromPoint(randomSquare, 10, 10, colorRed)
     // a1 = performance.now();
     // evolvePlants(1, 5);
     // console.log('evolvePlants time', performance.now() - a1);
