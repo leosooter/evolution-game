@@ -9,16 +9,12 @@ const blankColor = {
     b:25
 }
 
-export function randomBrown(min, max) {
-    const r = random(44, 255);
-    const g = Math.floor(r * random(.5, .75));
-    const b = Math.floor(r * random(0, .2));
+export function randomColor() {
+    const r = random(10, 255);
+    const g = random(10, 255);
+    const b = random(10, 255);
 
-    return {
-        r,
-        g,
-        b
-    }
+    return `rgb(${r}, ${g}, ${b})`
 }
 
 export function randomGreen(min, max) {
@@ -107,7 +103,7 @@ function getMountainColor() {
 export function getGridPlantColor(square, waterLevel = 0, season) {
     const {
         precipitation,
-        plants,
+        totalPlants,
         avgElevation,
         baseTemp
     } = square;
@@ -128,11 +124,11 @@ export function getGridPlantColor(square, waterLevel = 0, season) {
         return getRiverColor(baseTemp)
     }
 
-    if (plants.length > 3 && season === "Fall") {
+    if (totalPlants > 15 && season === "Fall") {
         return getFallColor(baseTemp);
     }
 
-    const plantsIndex = matchRangeToRange([0, worldColorsGrid.length - 1], [0,10], plants.length, 0);
+    const plantsIndex = matchRangeToRange([0, worldColorsGrid.length - 1], [0,25], totalPlants, 0);
     const maxIndex = worldColorsGrid.length - 1;
     const gridAdjust = 100 / worldColorsGrid.length;
 
@@ -215,7 +211,3 @@ export function applyYearlyRain(square) {
     //desert brown r230 g160 b75
 }
 
-export function randomColor(colorType) {
-
-    return randomGreen();
-}

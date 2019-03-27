@@ -13,7 +13,7 @@ class SideBar extends Component{
             <div className="sideBarWrapper">
                 <Controls {...this.props} />
                 <TerraformControls {...this.props} />
-                <WorldInfo {...this.props.world}/>
+                {/* <WorldInfo {...this.props.world}/> */}
                 {/* <WorldColors worldColorsGrid={this.props.worldColorsGrid} /> */}
             </div>
         )

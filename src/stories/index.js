@@ -6,6 +6,7 @@ import { linkTo } from '@storybook/addon-links';
 import App from "../../src/App";
 import AnimalApp from "../../src/animal-app";
 import LoopTest from "../helpers/function-tests";
+import GridTest from "../testing/test-app";
 
 storiesOf('Grid', module)
 .add('Elevation', () => (
@@ -25,8 +26,8 @@ storiesOf('Grid', module)
 ))
 
 storiesOf('Test', module)
-  .add('loop-test', () => (
-    <LoopTest />
+  .add('Grid Test', () => (
+    <GridTest />
   ));
 
 

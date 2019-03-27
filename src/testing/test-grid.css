@@ -1,0 +1,20 @@
+.gridWrapper {
+    display: inline-block;
+}
+
+.gridRow {
+    display: flex;
+    padding: 0;
+    margin: 0
+}
+
+.gridBackground {
+    background-color: rgb(0, 200, 250);
+}
+
+.gridSquare {
+    height: 50px;
+    width: 50px;
+    background-color: bisque;
+    box-sizing: border-box;
+}

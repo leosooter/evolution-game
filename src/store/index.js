@@ -6,12 +6,13 @@ import {world} from "../store/state";
 const worldOptions = {
     height: 80,
     width: 160,
-    // height: 30,
-    // width: 60,
+    // height: 5,
+    // width: 10,
     zoomLevel: 2,
     waterLevel: 0
 }
 const defaultState = initNewWorld(worldOptions);
+// const defaultState = {};
 
 function reducer(state, action) {
     switch (action.type) {

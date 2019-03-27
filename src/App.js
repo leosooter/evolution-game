@@ -18,8 +18,9 @@ class App extends Component {
     return (
       <Provider store={store}>
         {mainView}
-        <LowerDisplayConnected />
         <SideBarConnected />
+        <LowerDisplayConnected />
+
       </Provider>
     );
   }

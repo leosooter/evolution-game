@@ -4,12 +4,20 @@ import { world } from "../../../store/state";
 
 class SquareLifeforms extends Component {
     state = {
-        selectedLifeform: null
+        selectedLifeform: null,
+        selectedNiche: null
     }
 
     selectedLifeform = (lifeform) => {
         this.setState({
             selectedLifeform: lifeform
+        });
+    }
+
+    selectNiche = (niche) => {
+        console.log('height', niche);
+        this.setState({
+            selectedNiche: niche
         });
     }
 
@@ -47,14 +55,28 @@ class SquareLifeforms extends Component {
     }
 
     renderLifeforms = (lifeforms) => {
-        return lifeforms.map(
+        return (<ul className="plantList">
+            {lifeforms.map(
             (lifeformId) =>
-            {
-                let lifeform = world.plantObj[lifeformId];
-                return (<div className="lifeform" onClick={this.selectedLifeform.bind(this, lifeform)}>
-                    {lifeform.name} ~ {lifeform.survivalScore}
-                </div>)
-            }
+                {let lifeform = world.plantObj[lifeformId];
+                return (<li className="" onClick={this.selectedLifeform.bind(this, lifeform)}>
+                            {lifeform.name} ~ {lifeform.survivalScore}
+                        </li>)}
+            )}
+        </ul>)
+    }
+
+    renderNiches = (niches) => {
+        return (
+            <ul className="nichesList">
+                {niches.map(
+                    (niche, height) => {
+                        return (
+                            <li className="niche" onClick={this.selectNiche.bind(this, niche)}>Niche {height + 1}: plants: {niche.length}</li>
+                        )
+                    }
+                )}
+            </ul>
         )
     }
 
@@ -73,9 +95,10 @@ class SquareLifeforms extends Component {
             return null;
         }
 
-        const plants = this.props.selectedSquare.plants;
+        const plantNiches = this.props.selectedSquare.plantNiches;
         const animals = this.props.selectedSquare.animals;
         const selectedLifeform = this.state.selectedLifeform;
+        const selectedNiche = this.state.selectedNiche;
         let ancestor = "None"
         if(selectedLifeform && selectedLifeform.ancestor) {
             ancestor = world.plantObj[selectedLifeform.ancestor].name
@@ -83,15 +106,17 @@ class SquareLifeforms extends Component {
 
         return (
             <div className="lifeformDisplayWrapper">
-                {plants && <div className="plants">
-                    {this.renderLifeforms(plants, "plant")}
+                {plantNiches && <div className="plants">
+                    {this.renderNiches(plantNiches, "plant")}
                 </div>}
 
                 {animals && <div className="animals">
                     {this.renderLifeforms(animals, "animal")}
                 </div>}
 
-                {selectedLifeform && <div>
+                {selectedNiche && this.renderLifeforms(selectedNiche, "plants")}
+
+                {selectedLifeform && <div className="plantDetails">
                     <p><strong>{selectedLifeform.name}</strong> <em>{selectedLifeform.solarRatio}</em></p>
                     <p>Min Precip: {selectedLifeform.minPrecip}</p>
                     <p>Drought Tolerance: {selectedLifeform.droughtTolerance}</p>

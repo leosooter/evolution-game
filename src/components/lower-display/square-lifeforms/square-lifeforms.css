@@ -1,11 +1,11 @@
 .lifeformDisplayWrapper {
     display: flex;
     flex-direction: row;
-    width: 60%;
+    width: 72%;
     margin-left: 10px;
     padding-left: 10px;
     align-items: flex-start;
-    justify-content: space-between;
+    justify-content: flex-start;
 }
 
 .lifeform {
@@ -18,6 +18,18 @@
     flex-direction: column;
     justify-content: flex-start;
     align-items: center;
+}
+
+.plantDetails {
+    margin-left: 10px;
+}
+
+.plantList {
+    width: 180px;
+}
+
+.plantList li{
+    padding-top: 5px;
 }
 
 .lifeformDetails {
