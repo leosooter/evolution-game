@@ -1,5 +1,12 @@
 import {sum, sample, shuffle, clamp, mean, sortBy, sortedIndexBy, round, remove, cloneDeep} from "lodash";
-import {getGridColor, getGridPlantColor, colorTracker, randomColor, morphColor} from "./color-helpers";
+import {
+    getGridColor,
+    getGridPlantColor,
+    colorTracker,
+    randomColor,
+    morphColor,
+    morphColorStyle
+} from "./color-helpers";
 import {worldColorsGrid} from "../config/colors-config";
 import {random, matchRangeToRange, matchInverseRangeToRange} from "./utilities";
 import shortid from "shortid";
@@ -20,13 +27,15 @@ let rejectedOnNiche = 0;
 let removedPlants = 0;
 let plantsTested = 0;
 let successfulMutations = 0;
+let plantSpeciationThreshold = 3;
+let speciesRejected = 0;
 
-let biomes = {};
-let biomesArray = [];
+let plantDiffArray = [];
+
 let totalBiomeSquares = 0;
 let totalBiomes = 0;
-let tempRange = 10;
-let precipRange = 10;
+let tempRange = 3;
+let precipRange = 3;
 
 let plantCompetitionRuns = 0;
 let totalRainApplied = 0;
@@ -50,6 +59,9 @@ let mapWidth;
 let mapZoomHeight;
 let mapZoomWidth;
 let isZoomed = false;
+
+
+let initialPlantsAdded = false;
 
 ////////////////////////////////////////////////// Grid Utilities
 function getRandomFromGrid() {
@@ -203,6 +215,27 @@ function spreadFromSquare(square, distance = 1, callBack) {
     }
 }
 
+function disperseFromPoint(start, maxDistance, times, callBack) {
+    const {
+        heightIndex,
+        widthIndex
+    } = start;
+
+    for (let count = 0; count < times; count++) {
+        const randWidth = random(widthIndex - maxDistance, widthIndex + maxDistance);
+        const randHeight = random(heightIndex - maxDistance, heightIndex + maxDistance);
+        const squareId = world.globalGrid[randHeight] && world.globalGrid[randHeight][randWidth];
+
+        if (squareId) {
+            const square = world.squaresObj[squareId];
+
+            if (square) {
+                callBack(square);
+            }
+        }
+    }
+}
+
 
 ///////////////////////////// Grid creation
 
@@ -240,7 +273,7 @@ export function newSquare(id, widthIndex, heightIndex, gridHeight, options={}) {
         totalPlants: 0,
         plantNiches: [],
 
-        plantTested: 0,
+        plantsTested: 0,
         plantRejectedForTemp: 0,
         plantRejectedForPrecip: 0,
         plantRejectedForScore: 0,
@@ -389,8 +422,17 @@ function roundWaterCorners(square) {
 
 //////////////////////////////////// Colors
 function assignGridColorToSquare(square) {
-    square.gridColor = getGridPlantColor(square, world.waterLevel, world.currentSeason.name);
-    square.gridColorStyle = `rgb(${square.gridColor.r}, ${square.gridColor.g}, ${square.gridColor.b})`;
+
+    if (square.biome) {
+        let biomeId = square.biome;
+        let biome = world.biomes[biomeId];
+        let {
+            totalPlants
+        } = biome;
+
+        square.gridColor = getGridPlantColor(square, totalPlants, world.waterLevel, world.currentSeason.name);
+        square.gridColorStyle = `rgb(${square.gridColor.r}, ${square.gridColor.g}, ${square.gridColor.b})`;
+    }
 
     square.groundColor = getGridColor(square, world.waterLevel, world.currentSeason.name);
     square.groundColorStyle = `rgb(${square.groundColor.r}, ${square.groundColor.g}, ${square.groundColor.b})`;
@@ -646,30 +688,47 @@ export function decreaseMoisture(amount = 1) {
 //////////////////////////////////////////////////////////////////////////////////////////////////// Biosphere
 function createBiome(square) {
     const {id, avgMinTemp, avgPrecip} = square;
-    let {r,g,b} = morphColor(getGridColor(square, world.waterLevel, world.currentSeason.name), 30);
-    let biomeColor = `rgb(${r}, ${g}, ${b})`;
+    let biomeColor = morphColorStyle(getGridColor(square, world.waterLevel, world.currentSeason.name), 30);
+    let biomePlantColor = getGridColor(square, world.waterLevel, world.currentSeason.name);
 
-    biomes[id] = {
+    world.biomes[id] = {
         id: id,
-        avgTemp: avgMinTemp,
+        avgMinTemp: avgMinTemp,
         avgPrecip: avgPrecip,
         squares: [id],
         biomeColor: biomeColor,
-        adjacentBiomes: {}
+        biomePlantColor: biomePlantColor,
+        adjacentBiomes: {},
+        plants: [],
+        totalPlants: 0,
+        plantNiches: [],
+
+        plantsTested: 0,
+        plantRejectedForTemp: 0,
+        plantRejectedForPrecip: 0,
+        plantRejectedForScore: 0,
+        plantRejectedForDrought: 0,
+        plantRejectedForNiche: 0,
+
+        plantRejectedForTempArray: [],
+        plantRejectedForPrecipArray: [],
+        plantRejectedForScoreArray: [],
+        plantRejectedForDroughtArray: [],
+        plantRejectedForNicheArray: []
     }
 
-    biomesArray.push(id);
+    world.biomesArray.push(id);
 
     square.biome = id;
     square.biomeColor = biomeColor;
 
     totalBiomes++;
 
-    return biomes[id];
+    return world.biomes[id];
 }
 
 function testBiomeAgainstSquare(square, biome) {
-    let tempDiff = Math.abs(biome.avgTemp - square.avgMinTemp);
+    let tempDiff = Math.abs(biome.avgMinTemp - square.avgMinTemp);
     let precipDiff = Math.abs(biome.avgPrecip - square.avgPrecip);
 
     if (tempDiff < tempRange && precipDiff < precipRange) {
@@ -688,7 +747,7 @@ function addBiomeToSquare(square, biome) {
 }
 
 function connectBiomes(adjacentid, currentBiome) {
-    const adjacentBiome = biomes[adjacentid];
+    const adjacentBiome = world.biomes[adjacentid];
     if (adjacentBiome === undefined) {
         console.log('adjacent is undefined', adjacentid);
 
@@ -702,13 +761,18 @@ function connectBiomes(adjacentid, currentBiome) {
 }
 
 function assignBiomeToSquareLoop(testSquare) {
-    if(testSquare.avgElevation > world.waterLevel) {
-        totalBiomeSquares ++;
-    } else {
-        testSquare.biomeColor = "blue";
-    }
+    // if(testSquare.avgElevation > world.waterLevel) {
+    //     totalBiomeSquares ++;
+    // }
+    // else {
+    //     testSquare.biomeColor = "blue";
+    // }
 
-    if (testSquare.avgElevation < world.waterLevel || testSquare.biome) {
+    // if (testSquare.avgElevation < world.waterLevel || testSquare.biome) {
+    //     return;
+    // }
+
+    if (testSquare.biome) {
         return;
     }
     // console.log('--------------------------------------------555555555555555555');
@@ -741,63 +805,12 @@ function assignBiomeToSquareLoop(testSquare) {
                 testArray.push(side);
                 // console.log('added to testArray', testArray);
             }
-            if (side.biome) {
+            if (side.biome && side.avgElevation > world.waterLevel) {
                 connectBiomes(side.biome, biome);
             }
         });
 
         index++;
-    }
-}
-
-function assignBiomeToSquare(square) {
-    if(square.avgElevation < world.waterLevel) {
-        return;
-    }
-
-    const {id, plantNiches, avgMinTemp, avgPrecip, maxDroughtLength} = square;
-    let minSide = null;
-    let minDiff = 1000;
-
-    square.mainSidesArray.forEach(sideId => {
-        const side = world.squaresObj[sideId];
-        if(side.biome) {
-            let tempDiff = Math.abs(avgMinTemp - side.avgMinTemp);
-            let precipDiff = Math.abs(avgPrecip - side.avgPrecip);
-            let totalDiff = tempDiff + precipDiff;
-
-            if(tempDiff < tempRange && precipDiff < precipRange && totalDiff < minDiff) {
-                minSide = side;
-                minDiff = totalDiff;
-            }
-        }
-    });
-
-    if(minSide) {
-        const biome = biomes[minSide.biome];
-
-        biome.squares.push(id);
-        square.biome = biome.id;
-        square.biomeColor = biome.biomeColor;
-    } else {
-        let biomeColor = randomColor();
-
-        biomes[id] = {
-            id: id,
-            minTemp: avgMinTemp - tempRange,
-            maxTemp: avgMinTemp + tempRange,
-            minPrecip: avgPrecip - precipRange,
-            maxPrecip: avgPrecip + precipRange,
-            squares: [id],
-            biomeColor: biomeColor,
-        }
-
-        biomesArray.push(id);
-
-        square.biome = id;
-        square.biomeColor = biomeColor;
-
-        totalBiomes++;
     }
 }
 
@@ -815,56 +828,30 @@ Plant dispersal types:
 2) random dispersal - spreads outward to x random squares within a range
 */
 
-function spreadPlantToAdjacent(plant, start, distance) {
-    spreadFromSquare(start, distance, (square) =>{
-        testPlantAgainstSquare(square, plant);
+
+
+
+function testMutationAgainstBiomes(plant, plantBiomes) {
+    plantBiomes.forEach(biomeId => {
+        const biome = world.biomes[biomeId];
+        // console.log('biome', biome);
+
+        testPlantAgainstBiome(biome, plant);
+        if(biome.adjacentBiomes) {
+            for (const biomeId in biome.adjacentBiomes) {
+                if (biome.adjacentBiomes.hasOwnProperty(biomeId)) {
+                    const adjacentBiome = world.biomes[biome.adjacentBiomes[biomeId]];
+                    testPlantAgainstBiome(adjacentBiome, plant);
+                }
+            }
+        }
     });
 }
 
-function disperseFromPoint(start, maxDistance, times, callBack) {
-    const {heightIndex, widthIndex} = start;
-
-    for (let count = 0; count < times; count++) {
-        const randWidth = random(widthIndex - maxDistance, widthIndex + maxDistance);
-        const randHeight = random(heightIndex - maxDistance, heightIndex + maxDistance);
-        const squareId = world.globalGrid[randHeight] && world.globalGrid[randHeight][randWidth];
-
-        if (squareId) {
-            const square = world.squaresObj[squareId];
-
-            if (square) {
-                callBack(square);
-            }
-        }
-    }
-}
-
-
-function testMutationAgainstSquares(plant, squares) {
-    for (let index = 0; index < squares.length; index++) {
-        // plantCompetitionRuns ++;
-        let square = world.squaresObj[squares[index]];
-        // console.log('testing plant', plant.id, 'in square', square.id, 'against ownSquare', square.id);
-
-        testPlantAgainstSquare(square, plant);
-        disperseFromPoint(square, 20, 20, (testSquare) => {
-            testPlantAgainstSquare(testSquare, plant);
-        })
-
-        // spreadPlantToAdjacent(plant, square, 10)
-
-        // for (let index = 0; index < square.allSidesArray.length; index++) {
-        //     const side = world.squaresObj[square.allSidesArray[index]];
-        //     // console.log('testing plant', plant.id, 'in square', square.id, 'against square', side.id);
-        //     testPlantAgainstSquare(side, plant);
-        // }
-    }
-}
-
 function mutateArray(array, power, reverse = false) {
-    if (random(1, 5) === 5) {
+    if (random(1, 2) === 2) {
         array.push(random(2, power))
-    } else if (array.length > 1 && random(1, 5) === 5) {
+    } else if (array.length > 1 && random(1, 4) === 4) {
         array.shift();
     }
 
@@ -873,11 +860,51 @@ function mutateArray(array, power, reverse = false) {
     }
 }
 
+function testMutationDiff(plant, basePlant) {
+    let heightDiff = Math.abs(plant.height - basePlant.height);
+    let depthDiff = Math.abs(plant.depth - basePlant.depth);
+    let solarRatioDiff = Math.abs(plant.solarRatio - basePlant.solarRatio) * 10;
+    let tempDiff = Math.abs(plant.minTemp - basePlant.minTemp);
+    let precipDiff = Math.abs(plant.minPrecip - basePlant.minPrecip);
+
+    let totalDiff = heightDiff + depthDiff + solarRatioDiff + tempDiff + precipDiff;
+
+    // console.log("Diffs ",heightDiff, depthDiff, solarRatioDiff, tempDiff, precipDiff);
+
+    return totalDiff > plantSpeciationThreshold;
+}
+
+export function testPlantAgainstDiffArray(plant) {
+    const {height, minPrecip, minTemp, id} = plant;
+    const tempIndex = round(minTemp, -1);
+    console.log('tempIndex', tempIndex);
+
+
+    if(!plantDiffArray[height]) {
+        plantDiffArray[height] = [];
+        plantDiffArray[height][tempIndex] = [id];
+        return true;
+    } else if(!plantDiffArray[height][tempIndex]) {
+        plantDiffArray[height][tempIndex] = [id];
+        return true
+    } else {
+        plantDiffArray[height][tempIndex].forEach((gridPLantId) => {
+            const gridPlant = world.plantObj[gridPLantId];
+
+            if (!testMutationDiff(plant, gridPlant)) {
+                return false;
+            }
+        })
+
+        return true;
+    }
+}
+
 function newPlantMutation(basePlant, power) {
     // let plant = totalEvolutions === 1 ? cloneDeep(testPlant2) : cloneDeep(testPlant3);
     let plant = cloneDeep(basePlant);
     plant.id = shortid.generate();
-    plant.squares = [];
+    plant.biomes = [];
     plant.ancestor = basePlant.id;
     let {
         foliageProfile,
@@ -892,12 +919,18 @@ function newPlantMutation(basePlant, power) {
 
     applySurvivalStatsToPlant(plant);
 
+    if (!testPlantAgainstDiffArray(plant)) {
+        speciesRejected ++;
+        return null;
+    }
+
     if (plant.height > tallestPlant.height) {
         tallestPlant = plant;
     }
 
-    testMutationAgainstSquares(plant, basePlant.squares);
-    if(plant.squares.length > 0) {
+    testMutationAgainstBiomes(plant, basePlant.biomes);
+
+    if(!plant.extinct) {
         if (plant.height > tallestSurvivingPlant.height) {
             tallestSurvivingPlant = plant;
         }
@@ -909,10 +942,9 @@ function newPlantMutation(basePlant, power) {
 }
 
 export function getMutationsForPlant(plant, number = 1, power = 5) {
-    // console.log('getMutationsForPlant', plant.id);
-
     let newPlantIds = [];
-    for (let count = 0; count < number; count++) {
+
+    for (let count = 0; count < 1; count++) {
         let newPlant = newPlantMutation(plant, power);
         if(newPlant) {
             newPlantIds.push(newPlant.id);
@@ -925,28 +957,32 @@ export function getMutationsForPlant(plant, number = 1, power = 5) {
 }
 
 export function evolvePlants(number, power) {
-    console.log('Evolving plants', world.plantArray);
-    console.log('plants', world.plantObj);
+    let length = world.plantArray.length;
 
-    for (let index = 0; index < world.plantArray.length; index++) {
+    for (let index = 0; index < length; index++) {
         let plantId = world.plantArray[index];
         let plant = world.plantObj[plantId];
         plant.mutations = getMutationsForPlant(plant, number, power);
     }
     assignGridColorsToGrid();
-    console.log('successfulMutations', successfulMutations);
 }
 
-export function evolveOrganisms(times) {
+export function evolveOrganisms(times, power) {
     totalEvolutions++;
     let t1 = performance.now();
-    let mutationsPerPlant = matchInverseRangeToRange([1, 2], [0, 1000], world.plantArray.length, 0);
-    console.log('mutations per plant = ', mutationsPerPlant);
+    // let mutationsPerPlant = matchInverseRangeToRange([1, 2], [0, 1000], world.plantArray.length, 0);
+    let mutationsPerPlant = 1;
+    // console.log('mutations per plant = ', mutationsPerPlant);
 
-    evolvePlants(mutationsPerPlant, 3);
-    console.log('tallest mutation', tallestPlant.height, tallestPlant);
-    console.log('tallest surviving', tallestSurvivingPlant.height, tallestSurvivingPlant);
+    evolvePlants(times, power);
+    // console.log('tallest mutation', tallestPlant.height, tallestPlant);
+    // console.log('tallest surviving', tallestSurvivingPlant.height, tallestSurvivingPlant);
     console.log('evolveOrganisms time:', performance.now() - t1);
+    console.log('speciesRejected', speciesRejected);
+    console.log('plantCompetitionRuns', plantCompetitionRuns);
+    console.log('***** Plant Array', world.plantArray.length);
+    // console.log('Plant Object', world.plantObj);
+
     return getReturnState();
 }
 
@@ -960,7 +996,7 @@ function extinctPlant(plant) {
 function cullPlants() {
     for (const key in world.plantObj) {
         let plant = world.plantObj[key];
-        if (plant.squares.length <= 0) {
+        if (plant.biomes.length <= 0) {
             extinctPlant(plant);
         }
     }
@@ -981,72 +1017,37 @@ function logArrayScores(array, message) {
     }
 }
 
-function testCompete() {
-    world.plantObj["test100"] = {solarRatio: 100};
-    world.plantObj["test1"] = {solarRatio: 1};
-    world.plantObj["test2"] = {solarRatio: 2};
-    world.plantObj["test3"] = {solarRatio: 3};
-    world.plantObj["test4"] = {solarRatio: 4};
-    world.plantObj["test5"] = {solarRatio: 5};
-
-    let testArray = [];
-
-    testArray = addToArray("test1", testArray);
-    console.log('test array after splice', testArray);
-
-    testArray = addToArray("test3", testArray);
-    console.log('test array after splice', testArray);
-
-    testArray = addToArray("test5", testArray);
-    console.log('test array after splice', testArray);
-
-    testArray = addToArray("test4", testArray);
-    console.log('test array after splice', testArray);
-
-    testArray = addToArray("test2", testArray);
-    console.log('test array after splice', testArray);
-
-    testArray = addToArray("test100", testArray);
-    console.log('test array after splice', testArray);
-
-    // console.log('test array before sort', testArray);
-    // sortBy(testArray, (plantId) => world.plantObj[plantId] && world.plantObj[plantId].solarRatio);
-    // console.log('test array after sort', testArray);
-
-    // const position = sortedIndexBy(testArray, "test100", (plantId) => world.plantObj[plantId] && world.plantObj[plantId].solarRatio);
-    // console.log('Test position', position);
-    // testArray.splice(position, 0, "test100");
-    // console.log('test array after splice', testArray);
-    // // console.log('shift()', testArray.shift());
-    // // console.log('testArray after shift', testArray);
-}
-
-
-function competePlantAgainstSquare(square, plant, niches, nicheIndex) {
+function competePlantAgainstBiome(biome, plant, niches, nicheIndex) {
     plantCompetitionRuns++;
 
     if (Array.isArray(niches) && plant.id && niches.indexOf(plant.id) === -1) {
+        // console.log('Array is valid');
+
         if (!world.plantObj[plant.id]) {
             world.plantObj[plant.id] = plant;
         }
+        // console.log('sorting to determine position - niches', niches);
 
         const position = sortedIndexBy(niches, plant.id, (plantId) => world.plantObj[plantId] && world.plantObj[plantId].solarRatio);
+        // console.log('position', position);
 
         if(position === 0 && niches.length === 5) {
             return;
         }
 
-        niches.splice(position, 0, plant.id);
-        square.totalPlants ++;
-        plant.squares.push(square.id);
+        // console.log('adding to niches', niches);
 
-        if(!exampleSquare) {
-            exampleSquare = square;
-        }
+        niches.splice(position, 0, plant.id);
+        biome.totalPlants ++;
+        plant.biomes.push(biome.id);
+        // console.log('Added plant to niche');
+
 
         world.plantObj[plant.id].extinct = false;
         if(niches.length > 5) {
-            square.totalPlants --;
+            // console.log('removing plant');
+
+            biome.totalPlants --;
             const removedPlant = world.plantObj[niches.shift()];
             if (removedPlant.solarRatio > world.plantObj[niches[niches.length - 1]].solarRatio) {
                 console.log('ERROR __________ removing higher score plant', world.plantObj[niches[niches.length - 1]].solarRatio, removedPlant);
@@ -1060,18 +1061,23 @@ function competePlantAgainstSquare(square, plant, niches, nicheIndex) {
 
             }
 
-            remove(removedPlant.squares, (targetId) => targetId === square.id);
-            if(removedPlant.squares.length <= 0) {
+            remove(removedPlant.biomes, (targetId) => targetId === biome.id);
+            if(removedPlant.biomes.length <= 0) {
                 extinctPlant(removedPlant);
             }
+            // console.log('finished removing plant');
+
             removedPlants++;
         }
     }
+    // console.log('finished adding to niches');
+    return;
+
 }
 
-function testPlantAgainstSquare(square, plant) {
+function testPlantAgainstBiome(biome, plant) {
     plantsTested++;
-    square.plantTested ++;
+    biome.plantsTested ++;
     /*
     Plant survival logic:
     If square precip and temp stats are outside range- do not add
@@ -1088,106 +1094,110 @@ function testPlantAgainstSquare(square, plant) {
 
     maxDroughtLength(0 - 3): determined by rootDepth and rootRatio
     */
-    const {plantNiches, avgMinTemp, avgPrecip, maxDroughtLength} = square;
-    const {height, minTemp, minPrecip, droughtTolerance} = plant;
+    const {plantNiches, avgMinTemp, avgPrecip} = biome;
+    const {height, minTemp, minPrecip} = plant;
     const nicheIndex = matchRangeToRange([0,4], [0, 12], height, 0);
-    const matchedNiche = square.plantNiches[nicheIndex];
+    const matchedNiche = biome.plantNiches[nicheIndex];
 
     if(!matchedNiche) {
-        square.plantRejectedForNiche ++;
+        biome.plantRejectedForNiche ++;
 
-        if (square.plantRejectedForNicheArray.length === 0) {
-            square.plantRejectedForNicheArray.push(plantNiches.length)
+        if (biome.plantRejectedForNicheArray.length === 0) {
+            biome.plantRejectedForNicheArray.push(plantNiches.length)
         }
-        square.plantRejectedForNicheArray.push(height * 2);
+        biome.plantRejectedForNicheArray.push(height * 2);
         // if (plant.id === 1000) {
         //     console.log('^^^ rejecting TEST_PLANT on drought maxDroughtLength > droughtTolerance', maxDroughtLength, droughtTolerance);
         // }
         rejectedOnNiche++;
-        // console.log('Rejecting plant on drought (plant / square)', droughtTolerance, maxDroughtLength);
+        // console.log('Rejecting plant on drought (plant / biome)', droughtTolerance, maxDroughtLength);
         return;
     }
 
-    if (maxDroughtLength > droughtTolerance) {
-        square.plantRejectedForDrought++;
-        if (square.plantRejectedForDroughtArray.length === 0) {
-            square.plantRejectedForDroughtArray.push(maxDroughtLength)
-        }
-        square.plantRejectedForDroughtArray.push(droughtTolerance);
-        // if (plant.id === 1000) {
-        //     console.log('^^^ rejecting TEST_PLANT on drought maxDroughtLength > droughtTolerance', maxDroughtLength, droughtTolerance);
-        // }
-        rejectedOnDrought++;
-        // console.log('Rejecting plant on drought (plant / square)', droughtTolerance, maxDroughtLength);
-        return;
-    }
+    // if (maxDroughtLength > droughtTolerance) {
+    //     biome.plantRejectedForDrought++;
+    //     if (biome.plantRejectedForDroughtArray.length === 0) {
+    //         biome.plantRejectedForDroughtArray.push(maxDroughtLength)
+    //     }
+    //     biome.plantRejectedForDroughtArray.push(droughtTolerance);
+    //     // if (plant.id === 1000) {
+    //     //     console.log('^^^ rejecting TEST_PLANT on drought maxDroughtLength > droughtTolerance', maxDroughtLength, droughtTolerance);
+    //     // }
+    //     rejectedOnDrought++;
+    //     // console.log('Rejecting plant on drought (plant / biome)', droughtTolerance, maxDroughtLength);
+    //     return;
+    // }
 
     if (avgPrecip < minPrecip) {
-        square.plantRejectedForPrecip++;
-        if (square.plantRejectedForPrecipArray.length === 0) {
-            square.plantRejectedForPrecipArray.push(avgPrecip)
+        biome.plantRejectedForPrecip++;
+        if (biome.plantRejectedForPrecipArray.length === 0) {
+            biome.plantRejectedForPrecipArray.push(avgPrecip)
         }
-        square.plantRejectedForPrecipArray.push(minPrecip);
+        biome.plantRejectedForPrecipArray.push(minPrecip);
         // if (plant.id === 1000) {
         //     console.log('^^^ rejecting TEST_PLANT on precip avgPrecip < minPrecip', avgPrecip, minPrecip);
         // }
         rejectedOnPrecip++;
-        // console.log('Rejecting plant on precip (plant / square)', minPrecip, avgMinPrecip);
+        // console.log('Rejecting plant on precip (plant / biome)', minPrecip, avgMinPrecip);
         return;
     }
 
     if (avgMinTemp < minTemp) {
-        square.plantRejectedForTemp ++;
-        if (square.plantRejectedForTempArray.length === 0) {
-            square.plantRejectedForTempArray.push(avgMinTemp)
+        biome.plantRejectedForTemp ++;
+        if (biome.plantRejectedForTempArray.length === 0) {
+            biome.plantRejectedForTempArray.push(avgMinTemp)
         }
-        square.plantRejectedForTempArray.push(minTemp);
+        biome.plantRejectedForTempArray.push(minTemp);
         // if(plant.id === 1000) {
         //     console.log('^^^ rejecting TEST_PLANT on temp avgMinTemp < minTemp', avgMinTemp, minTemp);
         // }
-        // console.log('Rejecting plant on temp (plant / square)', minTemp, avgMinTemp);
+        // console.log('Rejecting plant on temp (plant / biome)', minTemp, avgMinTemp);
         rejectedOnTemp ++;
         return;
     }
+    // console.log('competePlantAgainstBiome', biome, plant, matchedNiche, height - 1);
 
-    competePlantAgainstSquare(square, plant, matchedNiche, height - 1);
+    competePlantAgainstBiome(biome, plant, matchedNiche, height - 1);
 }
 
-function assignPlantsToSquare(square) {
-    if (square.avgElevation <= world.waterLevel) {
-        return;
-    }
-
+function assignPlantsToBiome(biome) {
     for (let index = 0; index < world.plantArray.length; index++) {
         const plant = world.plantObj[world.plantArray[index]];
-        testPlantAgainstSquare(square, plant);
+
+        testPlantAgainstBiome(biome, plant);
     }
 }
 
-function assignPlantNichesToSquare(square) {
+function assignPlantNichesToBiome(biome) {
     // tempScore = -2 - 10
     // precipScore = 0 - 20
     // nicheScore = 0 - 30
 
     // niches = 0 - 5
-    let nicheScore = clamp(round((square.avgMinTemp / 10) + square.avgPrecip, 2), 0, 30);
+    let nicheScore = clamp(round((biome.avgMinTemp / 10) + biome.avgPrecip, 2), 0, 30);
     let niches = matchRangeToRange([0, 5], [0, 30], nicheScore, 0) || 0;
 
     for (let count = 0; count < niches; count++) {
-        square.plantNiches.push([]);
+        biome.plantNiches.push([]);
     }
 }
 
-function assignOrganismsToSquare(square) {
-    assignPlantNichesToSquare(square);
-    assignPlantsToSquare(square);
-    assignGridColorToSquare(square);
+function assignOrganismsToBiome(biome) {
+    assignPlantNichesToBiome(biome);
+    assignPlantsToBiome(biome);
 }
 
 export function assignOrganismsToGrid() {
-    loopGrid(assignOrganismsToSquare);
-    console.log('tallest mutation', tallestPlant);
-    console.log('tallest surviving', tallestSurvivingPlant);
+    for (const key in world.biomes) {
+        if (world.biomes.hasOwnProperty(key)) {
+            const biome = world.biomes[key];
+            // console.log('Assigning to biome', biome.id);
+
+            assignOrganismsToBiome(biome);
+        }
+    }
+
+    loopGrid(assignGridColorToSquare);
 
     return getReturnState();
 }
@@ -1302,7 +1312,7 @@ export function initNewWorldParams(zoomLevel, waterLevel) {
 
 function getReturnState() {
     return {
-        selectedSquare: null,
+        selectedSquare: world.selectedSquare,
         world: {
             ...world,
             seasons: setSeasons(),
@@ -1336,6 +1346,8 @@ export function initNewWorld(worldOptions) {
     let plants = loadPlantArray(1);
     world.plantObj = plants.plantObj;
     world.plantArray = plants.plantArray;
+    world.biomes = {};
+    world.biomesArray = [];
 
     let t1 = performance.now();
     const{height, width, zoomLevel, waterLevel, grid, woldParams} = worldOptions;
@@ -1378,7 +1390,7 @@ export function initNewWorld(worldOptions) {
     console.log('assignBiomes time', performance.now() - a1);
     console.log('Total Biomes', totalBiomes);
     console.log('Percent of total biome squares', round(totalBiomes / totalBiomeSquares, 2));
-    console.log('Biomes ((', biomes);
+    console.log('Biomes ((', world.biomes);
 
 
 
@@ -1412,6 +1424,7 @@ export function initNewWorld(worldOptions) {
     console.log('Plant Array', world.plantArray);
     console.log('Plant Object', world.plantObj);
     console.log('plantCompetitionRuns', plantCompetitionRuns);
+    initialPlantsAdded = true;
 
 
     let t2 = performance.now();

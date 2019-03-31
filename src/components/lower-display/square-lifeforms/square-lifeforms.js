@@ -1,6 +1,6 @@
 import React, {Component} from "react";
 import "./square-lifeforms.css";
-import { world } from "../../../store/state";
+import {world} from "../../../store/state";
 
 class SquareLifeforms extends Component {
     state = {
@@ -91,11 +91,14 @@ class SquareLifeforms extends Component {
     }
 
     render() {
-        if (!this.props.selectedSquare) {
+        const {selectedSquare} = this.props;
+        if (!selectedSquare || !selectedSquare.biome) {
             return null;
         }
 
-        const plantNiches = this.props.selectedSquare.plantNiches;
+        const selectedBiome = world.biomes[selectedSquare.biome]
+
+        const plantNiches = selectedBiome.plantNiches;
         const animals = this.props.selectedSquare.animals;
         const selectedLifeform = this.state.selectedLifeform;
         const selectedNiche = this.state.selectedNiche;

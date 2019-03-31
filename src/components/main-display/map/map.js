@@ -7,7 +7,6 @@ const viewTypes = {
     elevation: "elevationStyle",
     rainfall: "rainfallStyle",
     temperature: "temperatureStyle",
-    // groundColor: "groundColorStyle",
     groundColor: "biomeColor",
     gridColor: "gridColorStyle"
 }

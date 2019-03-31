@@ -13,7 +13,7 @@ function loopGrid(callBack, outerCallBack) {
         outerCallBack && outerCallBack(testGrid[heightIndex]);
         for (let widthIndex = 0; widthIndex < gridWidth; widthIndex++) {
             const squareId = testGrid[heightIndex][widthIndex];
-            console.log('squareId', squareId);
+            // console.log('squareId', squareId);
 
             const square = squaresObj[squareId];
             callBack(square);
@@ -180,7 +180,7 @@ function getSquare(id) {
 
 assignSidesToGrid();
 
-console.log('testGrid', testGrid);
+// console.log('testGrid', testGrid);
 
 
 class TestGrid extends Component {

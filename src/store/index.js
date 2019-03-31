@@ -6,8 +6,8 @@ import {world} from "../store/state";
 const worldOptions = {
     height: 80,
     width: 160,
-    // height: 5,
-    // width: 10,
+    // height: 40,
+    // width: 80,
     zoomLevel: 2,
     waterLevel: 0
 }
@@ -19,7 +19,7 @@ function reducer(state, action) {
         case EVOLVE_ORGANISMS:
 
             return {
-                ...evolveOrganisms(1)
+                ...evolveOrganisms(5, 5)
             }
 
         break;

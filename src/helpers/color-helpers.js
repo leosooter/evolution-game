@@ -52,6 +52,11 @@ export function morphColor(color, power = 3) {
     }
 }
 
+export function morphColorStyle(color, power = 3) {
+    let {r,g,b} = morphColor(color, power);
+    return `rgb(${r}, ${g}, ${b})`;
+}
+
 function getWaterColor(baseTemp, avgElevation) {
     let r;
     let g;
@@ -100,10 +105,9 @@ function getMountainColor() {
         return morphColor({r,g,b}, 5);
 }
 
-export function getGridPlantColor(square, waterLevel = 0, season) {
+export function getGridPlantColor(square, totalPlants, waterLevel = 0, season) {
     const {
         precipitation,
-        totalPlants,
         avgElevation,
         baseTemp
     } = square;

@@ -2,6 +2,7 @@ import {sample, clamp, round, cloneDeep, sum} from "lodash";
 import shortid from "shortid";
 import {random, matchInverseRangeToRange, matchRangeToRange, fractionArray} from "../utilities";
 import {world, globalGrid, globalZoomArray, plants} from "../../store/state";
+import {testPlantAgainstDiffArray} from "../grid-helpers";
 
 let maxPlant = {solarRatio: 0, name:"NONE"};
 
@@ -20,7 +21,7 @@ export const testPlant1 = {
     rootMass: 28,
     rootProfile: [27],
     rootRatio: 0.21212121212121213,
-    squares: [],
+    biomes: [],
     solarRatio: .5,
     totalMass: 132,
     extinct: true
@@ -41,7 +42,7 @@ export const testPlant2 = {
     rootMass: 28,
     rootProfile: [27],
     rootRatio: 0.21212121212121213,
-    squares: [],
+    biomes: [],
     solarRatio: .5,
     totalMass: 132,
     extinct: true
@@ -62,7 +63,7 @@ export const testPlant3 = {
     rootMass: 28,
     rootProfile: [27],
     rootRatio: 0.21212121212121213,
-    squares: [],
+    biomes: [],
     solarRatio: .5,
     totalMass: 132,
     extinct: true
@@ -76,7 +77,7 @@ export const seedConifer1 = {
     name: "___ Seed Conifer 1 ___",
     rootMass: 28,
     rootProfile: [60, 12, 2, 1, 1, 1, 1, 1, 1],
-    squares: [],
+    biomes: [],
     extinct: true
 }
 
@@ -87,17 +88,17 @@ export const seedConifer2 = {
     name: "___ Seed Conifer 2 ___",
     rootMass: 28,
     rootProfile: [30, 12, 2, 1, 1, 1],
-    squares: [],
+    biomes: [],
     extinct: true
 }
 
 export const generic1 = {
-    depth: 5,
-    foliageProfile: [5, 5, 5, 5, 5, 5],
+    depth: 1,
+    foliageProfile: [3],
     id: "GENERIC_1",
     name: "___ Generic 1 ___",
-    rootProfile: [5, 5, 5, 5, 5, 5],
-    squares: [],
+    rootProfile: [3],
+    biomes: [],
     extinct: true
 }
 
@@ -298,7 +299,7 @@ export function generateRandomPlant(id) {
         depth,
         foliageProfile: distributePlantMass(height, foliageMass),
         rootProfile: distributePlantMass(depth, rootMass),
-        squares: [],
+        biomes: [],
         extinct: true
     }
 
@@ -329,6 +330,7 @@ export function loadPlantArray(number) {
 
     plantObj[generic1.id] = generic1;
     plantArray.push(generic1.id)
+    testPlantAgainstDiffArray(generic1)
     console.log('*****************************************************************');
 
     console.log('maxScore', maxPlant.solarRatio, maxPlant.name);
