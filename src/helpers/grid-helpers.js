@@ -876,9 +876,7 @@ function testMutationDiff(plant, basePlant) {
 
 export function testPlantAgainstDiffArray(plant) {
     const {height, minPrecip, minTemp, id} = plant;
-    const tempIndex = round(minTemp, -1);
-    console.log('tempIndex', tempIndex);
-
+    const tempIndex = round(minTemp, -1) / 10;
 
     if(!plantDiffArray[height]) {
         plantDiffArray[height] = [];
@@ -888,15 +886,27 @@ export function testPlantAgainstDiffArray(plant) {
         plantDiffArray[height][tempIndex] = [id];
         return true
     } else {
-        plantDiffArray[height][tempIndex].forEach((gridPLantId) => {
+        for (let index = 0; index < plantDiffArray[height][tempIndex].length; index++) {
+            const gridPLantId = plantDiffArray[height][tempIndex][index];
+
             const gridPlant = world.plantObj[gridPLantId];
 
             if (!testMutationDiff(plant, gridPlant)) {
+                speciesRejected++;
                 return false;
             }
-        })
+        }
 
         return true;
+    }
+}
+
+function mutatePlantColors(basePlant, plant) {
+    plant.foliageColor = morphColor(basePlant.foliageColor, 20);
+    plant.trunkColor = morphColor(basePlant.trunkColor, 5);
+
+    if(plant.hasFlowers && basePlant.hasFlowers) {
+        plant.flowerColor = morphColor(basePlant.flowerColor, 30);
     }
 }
 
@@ -918,11 +928,14 @@ function newPlantMutation(basePlant, power) {
     plant.totalMass = plant.foliageMass + plant.rootMass;
 
     applySurvivalStatsToPlant(plant);
+    let isPlantNewSpecies = testPlantAgainstDiffArray(plant);
 
-    if (!testPlantAgainstDiffArray(plant)) {
-        speciesRejected ++;
+
+    if (!isPlantNewSpecies) {
         return null;
     }
+
+    mutatePlantColors(basePlant, plant);
 
     if (plant.height > tallestPlant.height) {
         tallestPlant = plant;

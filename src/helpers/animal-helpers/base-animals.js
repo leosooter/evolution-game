@@ -99,7 +99,15 @@ export const generic1 = {
     name: "___ Generic 1 ___",
     rootProfile: [3],
     biomes: [],
-    extinct: true
+    extinct: true,
+    foliageColor: {r:20, g:128, b:20},
+    trunkColor: {r:130, g:80, b:40},
+    foliageSize: 4,
+    foliageDensity: 7,
+    trunkSize: 10,
+    hasFlowers: false,
+    flowerDensity: 10,
+    flowerColor: {r:200, g:50, b:200}
 }
 
 

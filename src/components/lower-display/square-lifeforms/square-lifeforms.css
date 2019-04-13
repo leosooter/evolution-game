@@ -44,3 +44,22 @@
     justify-content: center;
     align-items: center;
 }
+
+.plantGridRow {
+    display: flex;
+    padding: 0;
+    margin: 0
+}
+
+.groundLine {
+    width: 200px;
+    height: 5px;
+    background-color: brown;
+}
+
+.leafTest {
+    color: rgb(56, 122, 50);
+    color: rgb(128, 86, 48);
+}
+
+

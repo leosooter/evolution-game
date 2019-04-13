@@ -1,4 +1,5 @@
 import React, {Component} from "react";
+import Plant from "./plant";
 import "./square-lifeforms.css";
 import {world} from "../../../store/state";
 
@@ -128,9 +129,7 @@ class SquareLifeforms extends Component {
                     <p>Ancestor {ancestor}</p>
                 </div>}
 
-                {selectedLifeform && <div>
-                    {this.renderPlantProfile()}
-                </div>}
+                {selectedLifeform && <Plant plant={selectedLifeform}/>}
             </div>
         )
     }
