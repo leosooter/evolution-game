@@ -1,5 +1,5 @@
 import React, {Component} from "react";
-import "./world-info.css";
+// import "./world-info.css";
 
 class WorldInfo extends Component{
     render() {

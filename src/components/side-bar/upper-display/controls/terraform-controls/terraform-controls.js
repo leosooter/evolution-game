@@ -1,5 +1,5 @@
 import React, {Component} from "react";
-import "./terraform-controls.css";
+// import "./terraform-controls.css";
 
 class TerraformControls extends Component {
     constructor(props) {

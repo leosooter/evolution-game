@@ -1,12 +1,12 @@
 import React, {Component} from "react";
-import "./display.css";
+// import "./display.css";
 
 class Display extends Component{
 
     render() {
         const square = this.props.selectedSquare || {groundColor: {}}
         let elevationColor = square.avgElevation > 30 ? "white" : "black";
-
+        
         return (
             <div className="displayWrapper">
                 <div className="displaySquare" style={{background: square.gridColorStyle}}>
@@ -31,7 +31,7 @@ class Display extends Component{
                     </div>
 
                     <div className="displayStat precipStat" style={{background: square.temperatureStyle}}>
-                        TempArray: <em>{square.avgTempArray && square.avgTempArray.map(avg => (<span>{avg} | </span>))}</em>
+                        TempArray: <em>{square.avgTempArray && square.avgTempArray.map((avg, index) => (<span key={index}>{avg} | </span>))}</em>
                     </div>
 
                 </div>

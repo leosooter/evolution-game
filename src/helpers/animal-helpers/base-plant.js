@@ -99,15 +99,7 @@ export const generic1 = {
     name: "___ Generic 1 ___",
     rootProfile: [3],
     biomes: [],
-    extinct: true,
-    foliageColor: {r:20, g:128, b:20},
-    trunkColor: {r:130, g:80, b:40},
-    foliageSize: 4,
-    foliageDensity: 7,
-    trunkSize: 10,
-    hasFlowers: false,
-    flowerDensity: 10,
-    flowerColor: {r:200, g:50, b:200}
+    extinct: true
 }
 
 
@@ -155,6 +147,10 @@ function getFoliageStrength(plant) {
     const profile = plant.foliageProfile;
     const mass = plant.foliageMass;
 
+    if(profile.length === 1) {
+      return 2;
+    }
+
     //   console.log('getFoliageStrength');
 
     let score = profile.length;
@@ -182,7 +178,7 @@ function getFoliageStrength(plant) {
     // console.log('score after', score);
 
 
-    return clamp(round((score / profile.length), 2), 0, 1);
+    return clamp(round((score / profile.length), 2), 0, 10);
 }
 
 // function getFoliageStrength(plant) {
@@ -264,8 +260,8 @@ export function applySurvivalStatsToPlant(plant) {
     const rootDepthRatio = round((plant.rootProfile && plant.rootProfile.length || 1) / plant.totalMass, 2); // (.002 1)
 
     plant.name = sample(nameArray1) + " " + sample(nameArray2);
-    plant.minTemp = matchInverseRangeToRange([0, 70], [0, 1], adjustedStrength, 2);
-    plant.minPrecip = matchInverseRangeToRange([.1, 20], [.01, .5], rootSurfaceSpreadRatio, 2);
+    plant.minTemp = matchInverseRangeToRange([0, 70], [0, 1.1], adjustedStrength, 2);
+    plant.minPrecip = matchInverseRangeToRange([.1, 20], [.01, .8], plant.rootRatio, 2);
     plant.droughtTolerance = matchRangeToRange([0, 4,], [.01, .1], rootDepthRatio);
 }
 

@@ -1,5 +1,5 @@
 import React, {Component} from "react";
-import "./map.css";
+// import "./map.css";
 import LowerDisplay from "../../lower-display/lower-display";
 import {world} from "../../../store/state";
 

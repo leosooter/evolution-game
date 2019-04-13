@@ -1,5 +1,5 @@
 import React, {Component} from "react";
-import "./world-colors.css";
+// import "./world-colors.css";
 
 class WorldColors extends Component {
 

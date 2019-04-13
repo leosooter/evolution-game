@@ -8,6 +8,7 @@ function mapStateToProps(state) {
 function mapDispatchToProps(dispatch) {
     return {
         evolveOrganisms: () => dispatch({type: "EVOLVE_ORGANISMS"}),
+        addAnimals: () => dispatch({type: "ADD_ALL_ANIMALS"}),
         reapplyOrganisms: () => dispatch({type: "REAPPLY_ORGANISMS"}),
         applyYearlyRain: () => dispatch({type: "APPLY_YEARLY_RAIN"}),
         applyInitialRain: () => dispatch({type: "APPLY_INITIAL_RAIN"}),
@@ -16,7 +17,8 @@ function mapDispatchToProps(dispatch) {
         increaseMoisture: () => dispatch({type: "INCREASE_MOISTURE"}),
         decreaseMoisture: () => dispatch({type: "DECREASE_MOISTURE"}),
         moveTime: (payload) => dispatch({type: "MOVE_TIME", payload}),
-        toggleZoom: () => dispatch({type: "TOGGLE_ZOOM"})
+        toggleZoom: () => dispatch({type: "TOGGLE_ZOOM"}),
+        changeView: (payload) => dispatch({type: "CHANGE_VIEW", payload})
     }
 }
 

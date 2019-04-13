@@ -1,6 +1,5 @@
 import React, {Component} from "react";
-import Plant from "./plant";
-import "./square-lifeforms.css";
+// import "./square-lifeforms.css";
 import {world} from "../../../store/state";
 
 class SquareLifeforms extends Component {
@@ -55,16 +54,36 @@ class SquareLifeforms extends Component {
         return null;
     }
 
-    renderLifeforms = (lifeforms) => {
+    renderPlants = (lifeforms) => {
         return (<ul className="plantList">
             {lifeforms.map(
             (lifeformId) =>
                 {let lifeform = world.plantObj[lifeformId];
-                return (<li className="" onClick={this.selectedLifeform.bind(this, lifeform)}>
+                return (<li className="" key={lifeform.id} onClick={this.selectedLifeform.bind(this, lifeform)}>
                             {lifeform.name} ~ {lifeform.survivalScore}
                         </li>)}
             )}
         </ul>)
+    }
+
+    renderAnimals = (lifeforms) => {
+      return (<ul className="animalList">
+          {lifeforms.map(
+          (lifeformId) =>
+              {let animal = world.animalObj[lifeformId];
+              return (<li className="" key={animal.id}onClick={this.selectedLifeform.bind(this, animal)}>
+                          {animal.name} ~ {animal.survivalScore}
+                      </li>)}
+          )}
+      </ul>)
+  }
+
+    renderLifeforms = (lifeforms, type) => {
+      if(type === "plants") {
+        return this.renderPlants(lifeforms);
+      } else if (type === "animals") {
+        return this.renderAnimals(lifeforms);
+      }
     }
 
     renderNiches = (niches) => {
@@ -73,7 +92,7 @@ class SquareLifeforms extends Component {
                 {niches.map(
                     (niche, height) => {
                         return (
-                            <li className="niche" onClick={this.selectNiche.bind(this, niche)}>Niche {height + 1}: plants: {niche.length}</li>
+                            <li className="niche" key={height} onClick={this.selectNiche.bind(this, niche)}>Niche {height + 1}: plants: {niche.length}</li>
                         )
                     }
                 )}
@@ -97,10 +116,11 @@ class SquareLifeforms extends Component {
             return null;
         }
 
-        const selectedBiome = world.biomes[selectedSquare.biome]
-
+        const selectedBiome = world.biomes[selectedSquare.biome];
+        console.log("selected Biome", selectedBiome);
+        
         const plantNiches = selectedBiome.plantNiches;
-        const animals = this.props.selectedSquare.animals;
+        const animals = selectedBiome.animals;        
         const selectedLifeform = this.state.selectedLifeform;
         const selectedNiche = this.state.selectedNiche;
         let ancestor = "None"
@@ -110,12 +130,13 @@ class SquareLifeforms extends Component {
 
         return (
             <div className="lifeformDisplayWrapper">
+                {/* {animals && <div className="animals">
+                    Animals
+                    {this.renderLifeforms(animals, "animals")}
+                </div>} */}
+
                 {plantNiches && <div className="plants">
                     {this.renderNiches(plantNiches, "plant")}
-                </div>}
-
-                {animals && <div className="animals">
-                    {this.renderLifeforms(animals, "animal")}
                 </div>}
 
                 {selectedNiche && this.renderLifeforms(selectedNiche, "plants")}
@@ -129,7 +150,9 @@ class SquareLifeforms extends Component {
                     <p>Ancestor {ancestor}</p>
                 </div>}
 
-                {selectedLifeform && <Plant plant={selectedLifeform}/>}
+                {selectedLifeform && <div>
+                    {this.renderPlantProfile()}
+                </div>}
             </div>
         )
     }

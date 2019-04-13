@@ -1,7 +1,28 @@
 import React, {Component} from "react";
-import "./controls.css";
+// import "./controls.css";
 
 class Controls extends Component {
+
+    renderAnimalOptions = () => {
+      let animals = world.animalObj;
+
+      if(!animals) {
+        return null;
+      }
+      let returnArray = [];
+
+      for (const animalId in animals) {
+        if (object.hasOwnProperty(animalId)) {
+          const animal = animals[animalId];
+          returnArray.push(<option value={animal}>{animal.name}</option>);
+        }
+      }
+
+      return (
+        <select>{returnArray}</select>
+      )
+    }
+
     render() {
         return (
             <div className="controlsWrapper">
@@ -10,7 +31,33 @@ class Controls extends Component {
                         Evolve Organisms
                     </button>
 
-                    <button className="controlButton" onClick={this.props.reapplyOrganisms}>
+                    <button className="controlButton" onClick={this.props.addAnimals}>
+                        Add Animals
+                    </button>
+
+                    <button className="controlButton" onClick={this.props.changeView.bind(this, {view: "elevation"})}>
+                        Elevation
+                    </button>
+
+                    <button className="controlButton" onClick={this.props.changeView.bind(this, {view: "temperature"})}>
+                        Temperature
+                    </button>
+
+                    <button className="controlButton" onClick={this.props.changeView.bind(this, {view: "rainfall"})}>
+                        Rainfall
+                    </button>
+
+                    <button className="controlButton" onClick={this.props.changeView.bind(this, {view: "groundColor"})}>
+                        Biomes
+                    </button>
+
+                    <button className="controlButton" onClick={this.props.changeView.bind(this, {view: "gridColor"})}>
+                        Vegetation
+                    </button>
+
+                    {/* {this.renderAnimalOptions()} */}
+
+                    {/* <button className="controlButton" onClick={this.props.reapplyOrganisms}>
                         Reapply Organisms
                     </button>
 
@@ -24,7 +71,7 @@ class Controls extends Component {
 
                     <button className="controlButton" onClick={this.props.applySeasonsRain}>
                         Season's Rain
-                    </button>
+                    </button> */}
                 </div>
 
                 <div className="controlColumn">

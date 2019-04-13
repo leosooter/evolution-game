@@ -1,7 +1,7 @@
 import React, {Component} from "react";
 import Display from "./display/display";
 import SquareLifeforms from "./square-lifeforms/square-lifeforms";
-import "./lower-display.css";
+// import "./lower-display.css";
 
 
 class LowerDisplay extends Component {
