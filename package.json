@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@storybook/cli": "^4.1.11",
+    "@storybook/cli": "^10.2.0",
     "@storybook/react": "^4.1.11",
     "lodash.clone": "^4.5.0",
     "lodash.clonedeep": "^4.5.0",
